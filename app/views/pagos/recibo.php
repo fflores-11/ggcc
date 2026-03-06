@@ -16,12 +16,15 @@ foreach ($pago['detalles'] as $detalle) {
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>Recibo de Pago</h4>
     <div class="d-flex gap-2">
+        <a href="pagos.php?action=pdf&id=<?= $pago['id'] ?>" class="btn btn-outline-danger" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+            <i class="bi bi-printer me-2"></i>Imprimir
+        </button>
         <a href="pagos.php?action=enviar&id=<?= $pago['id'] ?>" class="btn btn-outline-primary">
             <i class="bi bi-envelope me-2"></i>Enviar por Email
         </a>
-        <button onclick="window.print()" class="btn btn-primary-custom">
-            <i class="bi bi-printer me-2"></i>Imprimir
-        </button>
     </div>
 </div>
 
@@ -150,6 +153,12 @@ foreach ($pago['detalles'] as $detalle) {
                 <a href="propiedades.php?action=show&id=<?= $pago['propiedad_id'] ?>" class="btn btn-outline-info">
                     <i class="bi bi-house-door me-2"></i>Ver Propiedad
                 </a>
+                <a href="pagos.php?action=pdf&id=<?= $pago['id'] ?>" class="btn btn-outline-danger" target="_blank">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+                </a>
+                <button onclick="window.print()" class="btn btn-outline-secondary">
+                    <i class="bi bi-printer"></i>
+                </button>
                 <a href="pagos.php?action=create" class="btn btn-primary-custom">
                     <i class="bi bi-plus-lg me-2"></i>Nuevo Pago
                 </a>

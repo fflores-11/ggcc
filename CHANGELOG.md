@@ -42,6 +42,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - Registro de pagos con selección dinámica de deudas
   - Pago de múltiples meses en una transacción
   - Generación automática de recibos con número correlativo (REC-XXXXXX-YYYY)
+  - **Recibo con descarga real en PDF** usando Dompdf v3.1.5
   - Recibo imprimible con diseño profesional
   - Historial de pagos por propiedad y comunidad
   - API AJAX para obtener deudas pendientes
@@ -157,6 +158,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **JavaScript:** Vanilla JS con AJAX
 - **Gráficos:** Chart.js
 - **Editor WYSIWYG:** TinyMCE 6
+- **Generación PDF:** Dompdf 3.1.5
 - **Iconos:** Bootstrap Icons
 - **Arquitectura:** MVC simple
 - **Servidor:** Apache 2.4 con mod_rewrite
@@ -171,6 +173,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 │   └── views/           # 25+ vistas organizadas por módulo
 ├── config/              # Configuración DB, autoload, utilidades
 ├── public/              # Punto de entrada + assets
+├── vendor/              # Librerías Composer (Dompdf, etc.)
 └── docs/                # Documentación (SMTP_CONFIG.md)
 ```
 
@@ -186,8 +189,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Comentarios en código para todas las clases y métodos
 
 ### 🚀 Próximas Mejoras (Roadmap)
+- [x] **Generación de PDFs** - ✅ Implementado con Dompdf v3.1.5 (6 Mar 2026)
 - [ ] Instalación de SwiftMailer para envío real de correos
-- [ ] Exportación real a Excel/PDF (implementación con librerías)
+- [ ] Exportación real a Excel (implementación con librerías)
 - [ ] Sistema de notificaciones en tiempo real
 - [ ] API REST para integración con apps móviles
 - [ ] Sistema de backup automático de base de datos
@@ -203,7 +207,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 ### Versión 1.0.0
 - **Fecha de lanzamiento:** 6 de Marzo de 2026
 - **Estado:** Estable y funcional
-- **Ambiente:** Listo para producción (con instalación de SwiftMailer para correos reales)
+- **Ambiente:** 
+  - ✅ Generación de PDFs con Dompdf v3.1.5
+  - ⏳ Envío de correos requiere SwiftMailer (configuración SMTP lista)
 - **Desarrollado por:** Claude Code (Anthropic)
 - **Tiempo de desarrollo:** ~8 horas de trabajo continuo
 

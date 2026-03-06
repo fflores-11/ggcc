@@ -9,12 +9,14 @@ class PagosController {
     private Deuda $deudaModel;
     private Propiedad $propiedadModel;
     private Comunidad $comunidadModel;
+    private ConfiguracionSMTP $smtpConfigModel;
 
     public function __construct() {
         $this->pagoModel = new Pago();
         $this->deudaModel = new Deuda();
         $this->propiedadModel = new Propiedad();
         $this->comunidadModel = new Comunidad();
+        $this->smtpConfigModel = new ConfiguracionSMTP();
     }
 
     /**
@@ -166,7 +168,7 @@ class PagosController {
     }
 
     /**
-     * Genera PDF del recibo (placeholder para futura implementación)
+     * Genera y descarga el recibo en PDF usando Dompdf
      */
     public function pdf(): void {
         $id = (int) ($_GET['id'] ?? 0);
@@ -183,15 +185,233 @@ class PagosController {
             redirect('pagos.php');
         }
 
-        // Por ahora, solo marca como generado y redirige al recibo
-        $this->pagoModel->marcarReciboGenerado($id, 'recibo_' . $id . '.pdf');
+        // Generar número de recibo
+        $pago['numero_recibo'] = $this->pagoModel->generarNumeroRecibo($id);
+
+        // Formatear meses pagados
+        $mesesPagados = [];
+        foreach ($pago['detalles'] as $detalle) {
+            $mesesPagados[] = getMonthName((int)$detalle['mes']) . ' ' . $detalle['anio'];
+        }
+
+        // Cargar Dompdf desde vendor
+        require_once ROOT_PATH . '/vendor/autoload.php';
+
+        // Configurar Dompdf
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isPhpEnabled', true);
+        $options->set('defaultFont', 'Arial');
+
+        $dompdf = new \Dompdf\Dompdf($options);
+
+        // Crear contenido HTML del PDF
+        $html = $this->generarHtmlPdf($pago, $mesesPagados);
         
-        flash('success', 'Recibo marcado como generado. Implementación de PDF pendiente.');
-        redirect('pagos.php?action=recibo&id=' . $id);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Descargar el PDF
+        $filename = 'Recibo_' . $pago['numero_recibo'] . '.pdf';
+        $dompdf->stream($filename, ['Attachment' => true]);
+        exit;
     }
 
     /**
-     * Envía recibo por email (placeholder para futura implementación)
+     * Genera el HTML para el PDF del recibo
+     */
+    private function generarHtmlPdf(array $pago, array $mesesPagados): string {
+        $logo = APP_NAME;
+        $fecha = formatDate($pago['fecha']);
+        $total = formatMoney((float)$pago['monto']);
+        
+        $filas = '';
+        foreach ($pago['detalles'] as $detalle) {
+            $monto = formatMoney((float)$detalle['monto_pagado']);
+            $filas .= "
+                <tr>
+                    <td>" . getMonthName((int)$detalle['mes']) . ' ' . $detalle['anio'] . "</td>
+                    <td style='text-align: right;'>$monto</td>
+                </tr>
+            ";
+        }
+
+        $observaciones = '';
+        if ($pago['observaciones']) {
+            $observaciones = "
+                <div style='margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;'>
+                    <strong>Observaciones:</strong><br>
+                    " . nl2br(htmlspecialchars($pago['observaciones'])) . "
+                </div>
+            ";
+        }
+
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <title>Recibo de Pago</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .header { text-align: center; border-bottom: 3px solid #667eea; padding-bottom: 20px; margin-bottom: 30px; }
+                .header h1 { color: #667eea; margin: 0; font-size: 28px; }
+                .header h2 { color: #333; margin: 10px 0 0 0; font-size: 18px; }
+                .info-box { background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px; }
+                .info-row { margin: 8px 0; }
+                .label { font-weight: bold; color: #555; display: inline-block; width: 120px; }
+                .value { color: #333; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th { background: #667eea; color: white; padding: 12px; text-align: left; }
+                td { padding: 10px; border-bottom: 1px solid #ddd; }
+                .total { font-size: 18px; font-weight: bold; color: #667eea; text-align: right; margin-top: 20px; }
+                .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+                .signature { margin-top: 60px; text-align: center; }
+                .signature-line { border-top: 1px solid #333; width: 200px; margin: 0 auto; padding-top: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class='header'>
+                <h1>&#10003; RECIBO DE PAGO</h1>
+                <h2>{$pago['numero_recibo']}</h2>
+                <p style='color: #666; margin: 5px 0;'>Sistema $logo</p>
+            </div>
+
+            <div class='info-box'>
+                <div class='info-row'>
+                    <span class='label'>Comunidad:</span>
+                    <span class='value'>" . htmlspecialchars($pago['comunidad_nombre']) . "</span>
+                </div>
+                <div class='info-row'>
+                    <span class='label'>Dirección:</span>
+                    <span class='value'>" . htmlspecialchars($pago['comunidad_direccion']) . "</span>
+                </div>
+                <div class='info-row'>
+                    <span class='label'>Fecha:</span>
+                    <span class='value'>$fecha</span>
+                </div>
+            </div>
+
+            <div class='info-box'>
+                <div class='info-row'>
+                    <span class='label'>Propiedad:</span>
+                    <span class='value' style='font-size: 16px;'><strong>" . htmlspecialchars($pago['propiedad_nombre']) . "</strong></span>
+                </div>
+                <div class='info-row'>
+                    <span class='label'>Propietario:</span>
+                    <span class='value'>" . htmlspecialchars($pago['nombre_dueno']) . "</span>
+                </div>
+                <div class='info-row'>
+                    <span class='label'>Email:</span>
+                    <span class='value'>" . htmlspecialchars($pago['email_dueno']) . "</span>
+                </div>
+            </div>
+
+            <h3 style='color: #667eea; margin-top: 30px;'>Detalle de Pago</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Período</th>
+                        <th style='text-align: right;'>Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    $filas
+                </tbody>
+            </table>
+
+            <div class='total'>
+                TOTAL PAGADO: $total
+            </div>
+
+            $observaciones
+
+            <div class='signature'>
+                <div class='signature-line'>Firma y Sello</div>
+                <p style='margin-top: 5px; color: #666;'>Administración de Gastos Comunes</p>
+            </div>
+
+            <div class='footer'>
+                <p>Este documento es un comprobante de pago válido.</p>
+                <p>Conserve este recibo para futuras consultas.</p>
+                <p>Generado el " . date('d/m/Y H:i:s') . "</p>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+
+    /**
+     * Genera el HTML para el cuerpo del email
+     */
+    private function generarEmailHtml(array $pago, array $mesesPagados, string $destinatario): string {
+        $numeroRecibo = $this->pagoModel->generarNumeroRecibo($pago['id']);
+        $fecha = formatDate($pago['fecha']);
+        $total = formatMoney((float)$pago['monto']);
+        
+        $listaMeses = '<ul>';
+        foreach ($mesesPagados as $mes) {
+            $listaMeses .= "<li>$mes</li>";
+        }
+        $listaMeses .= '</ul>';
+        
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                .info-box { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .label { font-weight: bold; color: #667eea; }
+                .total { font-size: 24px; font-weight: bold; color: #667eea; text-align: center; margin: 20px 0; }
+                .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+                ul { padding-left: 20px; }
+                li { margin: 5px 0; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>&#10003; RECIBO DE PAGO</h1>
+                    <h2>$numeroRecibo</h2>
+                </div>
+                
+                <div class='content'>
+                    <p>Estimado/a <strong>$destinatario</strong>,</p>
+                    
+                    <p>Le informamos que hemos recibido el pago correspondiente a los gastos comunes de su propiedad <strong>" . htmlspecialchars($pago['propiedad_nombre']) . "</strong>.</p>
+                    
+                    <div class='info-box'>
+                        <p><span class='label'>Comunidad:</span> " . htmlspecialchars($pago['comunidad_nombre']) . "</p>
+                        <p><span class='label'>Fecha de pago:</span> $fecha</p>
+                        <p><span class='label'>Períodos pagados:</span></p>
+                        $listaMeses
+                    </div>
+                    
+                    <div class='total'>
+                        TOTAL PAGADO: $total
+                    </div>
+                    
+                    <p>Agradecemos su puntualidad en los pagos.</p>
+                    
+                    <div class='footer'>
+                        <p>Este es un correo automático del sistema de administración de gastos comunes.</p>
+                        <p>Si tiene dudas, contacte a la administración.</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+
+    /**
+     * Envía recibo por email usando configuración SMTP de la comunidad
      */
     public function enviarEmail(): void {
         $id = (int) ($_GET['id'] ?? 0);
@@ -208,8 +428,66 @@ class PagosController {
             redirect('pagos.php');
         }
 
-        // Placeholder - en producción, enviaría el email
-        flash('success', 'Recibo enviado por email a: ' . $pago['email_dueno']);
+        // Obtener configuración SMTP de la comunidad
+        $config = $this->smtpConfigModel->getByComunidad($pago['comunidad_id']);
+        
+        if (!$config) {
+            flash('error', 'No hay configuración SMTP para esta comunidad. Contacte al administrador.');
+            redirect('pagos.php?action=recibo&id=' . $id);
+        }
+
+        // Determinar destinatario: prioridad al agente, si no al dueño
+        $toEmail = !empty($pago['email_agente']) ? $pago['email_agente'] : $pago['email_dueno'];
+        $toName = !empty($pago['nombre_agente']) ? $pago['nombre_agente'] : $pago['nombre_dueno'];
+        
+        if (empty($toEmail)) {
+            flash('error', 'No hay email configurado ni para el agente ni para el dueño de la propiedad');
+            redirect('pagos.php?action=recibo&id=' . $id);
+        }
+
+        // Preparar contenido del email
+        $asunto = 'Recibo de Pago #' . $this->pagoModel->generarNumeroRecibo($id);
+        $mesesPagados = [];
+        foreach ($pago['detalles'] as $detalle) {
+            $mesesPagados[] = getMonthName((int)$detalle['mes']) . ' ' . $detalle['anio'];
+        }
+        
+        // Crear cuerpo HTML del email
+        $bodyHtml = $this->generarEmailHtml($pago, $mesesPagados, $toName);
+        
+        try {
+            // Cargar SwiftMailer
+            require_once ROOT_PATH . '/vendor/autoload.php';
+            
+            // Crear transporte
+            $encryption = $config['encryption'] === 'none' ? null : $config['encryption'];
+            $transport = (new Swift_SmtpTransport($config['host'], $config['port'], $encryption))
+                ->setUsername($config['username'])
+                ->setPassword($config['password']);
+
+            $mailer = new Swift_Mailer($transport);
+            
+            // Crear mensaje
+            $message = (new Swift_Message($asunto))
+                ->setFrom([$config['from_email'] => $config['from_name']])
+                ->setTo([$toEmail => $toName])
+                ->setBody($bodyHtml, 'text/html')
+                ->addPart(strip_tags($bodyHtml), 'text/plain');
+
+            // Enviar
+            $result = $mailer->send($message);
+            
+            if ($result > 0) {
+                flash('success', 'Recibo enviado exitosamente a: ' . $toEmail);
+            } else {
+                flash('error', 'No se pudo enviar el correo. Verifique la configuración SMTP.');
+            }
+            
+        } catch (Exception $e) {
+            error_log('Error al enviar email: ' . $e->getMessage());
+            flash('error', 'Error al enviar email: ' . $e->getMessage());
+        }
+        
         redirect('pagos.php?action=recibo&id=' . $id);
     }
 
