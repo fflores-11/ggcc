@@ -95,6 +95,25 @@ class ReportesController {
     }
 
     /**
+     * Reporte de egresos (pagos a colaboradores)
+     */
+    public function egresos(): void {
+        $mes = isset($_GET['mes']) ? (int) $_GET['mes'] : date('n');
+        $anio = isset($_GET['anio']) ? (int) $_GET['anio'] : date('Y');
+        
+        $comunidades = $this->comunidadModel->getForSelect();
+        $egresos = [];
+        $totalEgresos = 0;
+        
+        // Obtener todos los pagos a colaboradores del período
+        $egresos = $this->getEgresosPorPeriodo($mes, $anio);
+        $totalEgresos = array_sum(array_column($egresos, 'monto'));
+        
+        $title = 'Reporte de Egresos - ' . getMonthName($mes) . ' ' . $anio;
+        require_once VIEWS_PATH . '/reportes/egresos.php';
+    }
+
+    /**
      * Obtiene propiedades morosas
      */
     private function getMorosos(int $comunidadId, int $minimoMeses): array {
@@ -135,7 +154,7 @@ class ReportesController {
                 LEFT JOIN pagos_detalle pd ON p.id = pd.pago_id
                 LEFT JOIN deudas d ON pd.deuda_id = d.id
                 WHERE pr.comunidad_id = :comunidad_id
-                AND d.mes = :mes AND d.anio = :anio
+                AND MONTH(p.fecha) = :mes AND YEAR(p.fecha) = :anio
                 GROUP BY p.id
                 ORDER BY p.fecha DESC";
         
@@ -165,6 +184,30 @@ class ReportesController {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':comunidad_id' => $comunidadId,
+            ':mes' => $mes,
+            ':anio' => $anio
+        ]);
+        
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene egresos (pagos a colaboradores) por período
+     */
+    private function getEgresosPorPeriodo(int $mes, int $anio): array {
+        $sql = "SELECT pc.id, pc.fecha, pc.monto, pc.detalle,
+                       c.nombre as colaborador_nombre,
+                       c.tipo_colaborador,
+                       c.numero_cliente,
+                       u.nombre as pagado_por_nombre
+                FROM pagos_colaboradores pc
+                LEFT JOIN colaboradores c ON pc.colaborador_id = c.id
+                LEFT JOIN usuarios u ON pc.pagado_por = u.id
+                WHERE MONTH(pc.fecha) = :mes AND YEAR(pc.fecha) = :anio
+                ORDER BY pc.fecha ASC, pc.id ASC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
             ':mes' => $mes,
             ':anio' => $anio
         ]);

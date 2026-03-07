@@ -71,6 +71,25 @@ require_once __DIR__ . '/../partials/header.php';
             </div>
         </div>
     </div>
+    <!-- Reporte de Egresos -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon bg-dark text-white rounded-circle p-3 me-3">
+                        <i class="bi bi-arrow-up-circle fs-4"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Egresos</h5>
+                </div>
+                <p class="card-text text-muted">
+                    Detalle de pagos efectuados a colaboradores. Formato tipo libro de caja mensual.
+                </p>
+                <a href="reportes.php?action=egresos" class="btn btn-outline-dark w-100">
+                    <i class="bi bi-arrow-right me-2"></i>Ver Reporte
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row mt-4">

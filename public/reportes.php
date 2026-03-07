@@ -26,4 +26,8 @@ switch ($action) {
     case 'deudas':
         $controller->deudas();
         break;
+        
+    case 'egresos':
+        $controller->egresos();
+        break;
 }
