@@ -265,6 +265,12 @@
             <a href="pagos.php" class="<?= basename($_SERVER['PHP_SELF']) === 'pagos.php' ? 'active' : '' ?>">
                 <i class="bi bi-cash-coin"></i> Pagos
             </a>
+            <a href="saldos-mensuales.php" class="<?= basename($_SERVER['PHP_SELF']) === 'saldos-mensuales.php' ? 'active' : '' ?>">
+                <i class="bi bi-cash-stack"></i> Saldos Mensuales
+            </a>
+            <a href="colaboradores.php" class="<?= basename($_SERVER['PHP_SELF']) === 'colaboradores.php' ? 'active' : '' ?>">
+                <i class="bi bi-people-fill"></i> Colaboradores
+            </a>
             <a href="correos.php" class="<?= basename($_SERVER['PHP_SELF']) === 'correos.php' ? 'active' : '' ?>">
                 <i class="bi bi-envelope"></i> Envío de Correos
             </a>

@@ -225,6 +225,50 @@ CROSS JOIN (SELECT 0 AS n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SEL
 -- PROCEDIMIENTOS ALMACENADOS
 -- ============================================
 
+DELIMITER ;
+
+-- ============================================
+-- TABLA: colaboradores
+-- ============================================
+CREATE TABLE IF NOT EXISTS colaboradores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_colaborador ENUM('personal', 'empresa') DEFAULT 'personal',
+    nombre VARCHAR(150) NOT NULL,
+    email VARCHAR(100),
+    whatsapp VARCHAR(20),
+    direccion TEXT,
+    region VARCHAR(100),
+    comuna VARCHAR(100),
+    banco VARCHAR(100),
+    tipo_cuenta ENUM('corriente', 'vista') DEFAULT 'vista',
+    numero_cuenta VARCHAR(50),
+    numero_cliente VARCHAR(50),
+    activo TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tipo (tipo_colaborador),
+    INDEX idx_activo (activo),
+    INDEX idx_nombre (nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- TABLA: pagos_colaboradores
+-- ============================================
+CREATE TABLE IF NOT EXISTS pagos_colaboradores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    colaborador_id INT NOT NULL,
+    detalle TEXT NOT NULL,
+    monto DECIMAL(10, 2) NOT NULL,
+    fecha DATE NOT NULL,
+    pagado_por INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE RESTRICT,
+    FOREIGN KEY (pagado_por) REFERENCES usuarios(id) ON DELETE RESTRICT,
+    INDEX idx_colaborador (colaborador_id),
+    INDEX idx_fecha (fecha),
+    INDEX idx_pagado_por (pagado_por)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 DELIMITER //
 
 -- Procedimiento para generar deudas mensuales automáticamente

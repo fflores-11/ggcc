@@ -10,7 +10,7 @@ require_once __DIR__ . '/../partials/header.php';
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>Registrar Nuevo Pago</h4>
     <a href="pagos.php" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-2"></i>Volver al Listado
+        <i class="bi bi-arrow-left me-2"></i>Volver
     </a>
 </div>
 
@@ -47,6 +47,22 @@ require_once __DIR__ . '/../partials/header.php';
                     </div>
                 </div>
 
+                <!-- Saldo Disponible -->
+                <div id="saldo_section" class="mb-4 d-none">
+                    <div class="alert alert-success">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-piggy-bank me-2"></i><strong>Saldo Disponible:</strong></span>
+                            <span id="saldo_disponible" class="fs-4 fw-bold text-success">$0</span>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="usar_saldo" name="usar_saldo" value="1">
+                            <label class="form-check-label" for="usar_saldo">
+                                Usar saldo disponible para pagar deudas
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Paso 3: Mostrar Deudas -->
                 <div id="deudas_section" class="mb-4 d-none">
                     <h6 class="mb-3 text-primary">Deudas Pendientes</h6>
@@ -58,6 +74,34 @@ require_once __DIR__ . '/../partials/header.php';
                     <div id="no_deudas" class="alert alert-warning d-none">
                         <i class="bi bi-check-circle me-2"></i>
                         Esta propiedad no tiene deudas pendientes.
+                        <br>
+                        <a href="pagos.php?action=createAnticipado&propiedad_id=<?= $propiedad['id'] ?? '' ?>" class="btn btn-sm btn-info mt-2">
+                            Registrar Pago Anticipado
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Monto Entregado (para sobrepagos) -->
+                <div id="monto_entregado_section" class="mb-4 d-none">
+                    <h6 class="mb-3 text-primary">Monto Entregado</h6>
+                    <div class="alert alert-light border">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label class="form-label">Total de deudas seleccionadas:</label>
+                                <div id="total_deudas_display" class="fs-5 fw-bold text-primary">$0</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Monto entregado por el propietario:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" name="monto_entregado" id="monto_entregado" class="form-control" 
+                                           min="0" step="100" placeholder="Ej: 50000">
+                                </div>
+                                <div class="form-text">
+                                    Si entrega más del total, la diferencia se guardará como saldo disponible.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -105,10 +149,16 @@ require_once __DIR__ . '/../partials/header.php';
             <ol class="text-muted">
                 <li class="mb-2">Seleccione la <strong>comunidad</strong> a la que pertenece la propiedad.</li>
                 <li class="mb-2">Seleccione la <strong>propiedad</strong> que realizará el pago.</li>
-                <li class="mb-2">Marque las <strong>deudas</strong> que desea pagar (puede pagar una o varias).</li>
-                <li class="mb-2">Verifique el <strong>monto total</strong> calculado automáticamente.</li>
+                <li class="mb-2">Si tiene <strong>saldo disponible</strong>, puede usarlo para pagar deudas.</li>
+                <li class="mb-2">Marque las <strong>deudas</strong> que desea pagar.</li>
+                <li class="mb-2">Si entrega más dinero del total, el excedente se guardará como saldo.</li>
                 <li>Confirme la fecha y presione "Registrar Pago".</li>
             </ol>
+            
+            <div class="alert alert-info mt-3">
+                <i class="bi bi-lightbulb me-2"></i>
+                <strong>Tip:</strong> Use "Pago Anticipado" para registrar un pago sin deuda específica. El monto se guardará como saldo para futuras deudas.
+            </div>
             
             <div class="alert alert-warning mt-3">
                 <i class="bi bi-exclamation-triangle me-2"></i>
@@ -131,8 +181,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalPagar = document.getElementById('total_pagar');
     const montoInput = document.getElementById('monto_input');
     const btnSubmit = document.getElementById('btn_submit');
+    const saldoSection = document.getElementById('saldo_section');
+    const saldoDisponible = document.getElementById('saldo_disponible');
+    const usarSaldo = document.getElementById('usar_saldo');
+    const montoEntregadoSection = document.getElementById('monto_entregado_section');
+    const totalDeudasDisplay = document.getElementById('total_deudas_display');
+    const montoEntregado = document.getElementById('monto_entregado');
 
     let propiedadesData = [];
+    let currentSaldo = 0;
 
     // Cargar propiedades al cambiar comunidad
     comunidadSelect.addEventListener('change', function() {
@@ -143,6 +200,8 @@ document.addEventListener('DOMContentLoaded', function() {
         propiedadSelect.disabled = true;
         deudasSection.classList.add('d-none');
         totalesSection.classList.add('d-none');
+        saldoSection.classList.add('d-none');
+        montoEntregadoSection.classList.add('d-none');
         btnSubmit.disabled = true;
         
         if (!comunidadId) {
@@ -177,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
-    // Cargar deudas al cambiar propiedad
+    // Cargar deudas y saldo al cambiar propiedad
     propiedadSelect.addEventListener('change', function() {
         const propiedadId = this.value;
         
@@ -185,7 +244,10 @@ document.addEventListener('DOMContentLoaded', function() {
         deudasContainer.innerHTML = '';
         deudasSection.classList.add('d-none');
         totalesSection.classList.add('d-none');
+        saldoSection.classList.add('d-none');
+        montoEntregadoSection.classList.add('d-none');
         btnSubmit.disabled = true;
+        currentSaldo = 0;
         
         if (!propiedadId) {
             return;
@@ -195,11 +257,18 @@ document.addEventListener('DOMContentLoaded', function() {
         deudasLoading.classList.remove('d-none');
         noDeudas.classList.add('d-none');
 
-        // Llamada AJAX para obtener deudas
+        // Llamada AJAX para obtener deudas y saldo
         fetch(`pagos.php?action=api-deudas&propiedad_id=${propiedadId}`)
             .then(response => response.json())
             .then(data => {
                 deudasLoading.classList.add('d-none');
+                
+                // Mostrar saldo si existe
+                if (data.saldo_disponible > 0) {
+                    currentSaldo = data.saldo_disponible;
+                    saldoDisponible.textContent = '$' + currentSaldo.toLocaleString('es-CL');
+                    saldoSection.classList.remove('d-none');
+                }
                 
                 if (data.success && data.data.length > 0) {
                     let html = '<div class="list-group">';
@@ -223,9 +292,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     deudasContainer.innerHTML = html;
                     totalesSection.classList.remove('d-none');
+                    montoEntregadoSection.classList.remove('d-none');
                     btnSubmit.disabled = false;
                 } else {
                     noDeudas.classList.remove('d-none');
+                    // Update link in no_deudas message
+                    const noDeudasLink = noDeudas.querySelector('a');
+                    if (noDeudasLink) {
+                        noDeudasLink.href = `pagos.php?action=createAnticipado&propiedad_id=${propiedadId}`;
+                    }
                 }
             })
             .catch(error => {
@@ -243,7 +318,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         totalPagar.textContent = '$' + total.toLocaleString('es-CL');
+        totalDeudasDisplay.textContent = '$' + total.toLocaleString('es-CL');
         montoInput.value = total;
+        
+        // Establecer monto entregado mínimo igual al total
+        if (montoEntregado.value < total) {
+            montoEntregado.value = total;
+        }
+        montoEntregado.min = total;
         
         // Deshabilitar botón si no hay deudas seleccionadas
         btnSubmit.disabled = total === 0;

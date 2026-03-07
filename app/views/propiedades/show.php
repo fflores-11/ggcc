@@ -8,6 +8,8 @@ require_once __DIR__ . '/../partials/header.php';
 
 // Calcular deuda total
 $totalDeuda = array_sum(array_column($propiedad['deudas'], 'monto'));
+// Obtener saldo disponible
+$saldoDisponible = $propiedad['saldo'] ?? 0;
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -87,6 +89,16 @@ $totalDeuda = array_sum(array_column($propiedad['deudas'], 'monto'));
         <!-- Resumen Financiero -->
         <div class="form-section mt-4">
             <h6 class="section-title">Resumen Financiero</h6>
+            
+            <?php if ($saldoDisponible > 0): ?>
+            <div class="alert alert-success mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-piggy-bank me-2"></i>Saldo Disponible:</span>
+                    <span class="fs-4 fw-bold"><?= formatMoney($saldoDisponible) ?></span>
+                </div>
+                <small class="text-muted">Disponible para pagar futuras deudas</small>
+            </div>
+            <?php endif; ?>
             
             <div class="text-center mb-3">
                 <div class="display-6 fw-bold text-danger"><?= formatMoney($totalDeuda) ?></div>

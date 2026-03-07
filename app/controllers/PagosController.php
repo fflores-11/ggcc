@@ -101,6 +101,28 @@ class PagosController {
             redirect('pagos.php?action=create&propiedad_id=' . $propiedadId);
         }
 
+        // Verificar si se entregó un monto mayor (para generar saldo)
+        $montoEntregado = isset($_POST['monto_entregado']) ? (float) $_POST['monto_entregado'] : $montoTotal;
+        $usarSaldo = isset($_POST['usar_saldo']) && $_POST['usar_saldo'] == '1';
+        
+        // Si se quiere usar saldo disponible
+        if ($usarSaldo) {
+            $saldoDisponible = $this->propiedadModel->getSaldo($propiedadId);
+            if ($saldoDisponible > 0) {
+                // Aplicar saldo a las deudas
+                $resultadoSaldo = $this->deudaModel->intentarPagoConSaldo($propiedadId);
+                if ($resultadoSaldo['deudas_pagadas'] > 0) {
+                    flash('success', "Se aplicó " . formatMoney($resultadoSaldo['monto_aplicado']) . " del saldo disponible a " . $resultadoSaldo['deudas_pagadas'] . " deuda(s). Saldo restante: " . formatMoney($resultadoSaldo['saldo_restante']));
+                    // Recalcular deudas pendientes
+                    $deudasRestantes = $this->deudaModel->getPendientesByPropiedad($propiedadId);
+                    if (empty($deudasRestantes)) {
+                        flash('success', 'Todas las deudas han sido pagadas con el saldo disponible');
+                        redirect('propiedades.php?action=show&id=' . $propiedadId);
+                    }
+                }
+            }
+        }
+
         $data = [
             'propiedad_id' => $propiedadId,
             'fecha' => $_POST['fecha'] ?? date('Y-m-d'),
@@ -108,14 +130,30 @@ class PagosController {
             'observaciones' => trim($_POST['observaciones'] ?? '')
         ];
 
-        $pagoId = $this->pagoModel->registrarPago($data, $deudasValidas);
-
-        if ($pagoId) {
-            flash('success', 'Pago registrado exitosamente. Total pagado: ' . formatMoney($montoTotal));
-            redirect('pagos.php?action=recibo&id=' . $pagoId);
+        // Si hay monto entregado mayor al total, usar el nuevo método con saldo
+        if ($montoEntregado > $montoTotal) {
+            $resultado = $this->pagoModel->registrarPagoConSaldo($data, $deudasValidas, $montoEntregado);
+            if ($resultado) {
+                $mensaje = 'Pago registrado exitosamente. Total deudas: ' . formatMoney($resultado['total_deudas']);
+                if ($resultado['saldo_generado'] > 0) {
+                    $mensaje .= '. Saldo generado: ' . formatMoney($resultado['saldo_generado']) . ' (disponible para próximas deudas)';
+                }
+                flash('success', $mensaje);
+                redirect('pagos.php?action=recibo&id=' . $resultado['pago_id']);
+            } else {
+                flash('error', 'Error al registrar el pago');
+                redirect('pagos.php?action=create&propiedad_id=' . $propiedadId);
+            }
         } else {
-            flash('error', 'Error al registrar el pago');
-            redirect('pagos.php?action=create&propiedad_id=' . $propiedadId);
+            // Pago normal sin saldo
+            $pagoId = $this->pagoModel->registrarPago($data, $deudasValidas);
+            if ($pagoId) {
+                flash('success', 'Pago registrado exitosamente. Total pagado: ' . formatMoney($montoTotal));
+                redirect('pagos.php?action=recibo&id=' . $pagoId);
+            } else {
+                flash('error', 'Error al registrar el pago');
+                redirect('pagos.php?action=create&propiedad_id=' . $propiedadId);
+            }
         }
     }
 
@@ -158,14 +196,26 @@ class PagosController {
 
         $deudas = $this->deudaModel->getPendientesByPropiedad($propiedadId);
         $totalDeuda = $this->deudaModel->getTotalDeudaPropiedad($propiedadId);
+        $saldoDisponible = $this->propiedadModel->getSaldo($propiedadId);
         
         echo json_encode([
             'success' => true, 
             'data' => $deudas,
-            'total_deuda' => $totalDeuda
+            'total_deuda' => $totalDeuda,
+            'saldo_disponible' => $saldoDisponible,
+            'puede_usar_saldo' => $saldoDisponible > 0 && $totalDeuda > 0
         ]);
         exit;
     }
+
+    /*
+     * NOTA: Las funciones de Pago Anticipado han sido deshabilitadas.
+     * Use el módulo "Saldos Mensuales" en Operaciones para el control de caja.
+     * 
+    public function createAnticipado(): void { ... }
+    public function storeAnticipado(): void { ... }
+    public function apiGetSaldo(): void { ... }
+    */
 
     /**
      * Genera y descarga el recibo en PDF usando Dompdf
@@ -498,18 +548,37 @@ class PagosController {
         $comunidadId = (int) ($_POST['comunidad_id'] ?? 0);
         $mes = (int) ($_POST['mes'] ?? 0);
         $anio = (int) ($_POST['anio'] ?? 0);
+        $aplicarSaldos = isset($_POST['aplicar_saldos']) && $_POST['aplicar_saldos'] == '1';
         
         if (!$comunidadId || !$mes || !$anio) {
             flash('error', 'Datos incompletos');
             redirect('pagos.php');
         }
 
-        $cantidad = $this->deudaModel->generarDeudasMes($comunidadId, $mes, $anio);
-        
-        if ($cantidad > 0) {
-            flash('success', "Se generaron {$cantidad} deudas para " . getMonthName($mes) . " {$anio}");
+        if ($aplicarSaldos) {
+            // Generar deudas y aplicar saldos automáticamente
+            $resultado = $this->deudaModel->generarDeudasMesConSaldo($comunidadId, $mes, $anio, true);
+            $cantidad = $resultado['deudas_generadas'];
+            $saldosAplicados = count($resultado['saldos_aplicados']);
+            
+            if ($cantidad > 0) {
+                $mensaje = "Se generaron {$cantidad} deudas para " . getMonthName($mes) . " {$anio}";
+                if ($saldosAplicados > 0) {
+                    $mensaje .= ". Se aplicaron saldos automáticamente en {$saldosAplicados} propiedad(es)";
+                }
+                flash('success', $mensaje);
+            } else {
+                flash('warning', 'No se generaron nuevas deudas (puede que ya existan para este período)');
+            }
         } else {
-            flash('warning', 'No se generaron nuevas deudas (puede que ya existan para este período)');
+            // Generar deudas sin aplicar saldos
+            $cantidad = $this->deudaModel->generarDeudasMes($comunidadId, $mes, $anio);
+            
+            if ($cantidad > 0) {
+                flash('success', "Se generaron {$cantidad} deudas para " . getMonthName($mes) . " {$anio}");
+            } else {
+                flash('warning', 'No se generaron nuevas deudas (puede que ya existan para este período)');
+            }
         }
         
         redirect('pagos.php');

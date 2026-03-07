@@ -107,6 +107,131 @@ class Propiedad extends Model {
     }
 
     /**
+     * Obtiene el saldo actual de una propiedad
+     * @param int $propiedadId
+     * @return float
+     */
+    public function getSaldo(int $propiedadId): float {
+        $sql = "SELECT COALESCE(saldo, 0) FROM {$this->table} WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $propiedadId]);
+        return (float) $stmt->fetchColumn();
+    }
+
+    /**
+     * Incrementa el saldo de una propiedad (cuando hay sobrepago)
+     * @param int $propiedadId
+     * @param float $monto
+     * @param string $descripcion
+     * @param string|null $referenciaTipo
+     * @param int|null $referenciaId
+     * @return bool
+     */
+    public function incrementarSaldo(int $propiedadId, float $monto, string $descripcion = '', ?string $referenciaTipo = null, ?int $referenciaId = null): bool {
+        try {
+            $this->db->beginTransaction();
+            
+            // Obtener saldo actual
+            $saldoAnterior = $this->getSaldo($propiedadId);
+            $saldoNuevo = $saldoAnterior + $monto;
+            
+            // Actualizar saldo
+            $sql = "UPDATE {$this->table} SET saldo = :saldo WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':saldo' => $saldoNuevo, ':id' => $propiedadId]);
+            
+            // Registrar en historial
+            $sqlHist = "INSERT INTO propiedades_saldo_historial 
+                        (propiedad_id, tipo_movimiento, monto, saldo_anterior, saldo_nuevo, referencia_tipo, referencia_id, descripcion) 
+                        VALUES (:propiedad_id, 'ingreso', :monto, :saldo_anterior, :saldo_nuevo, :referencia_tipo, :referencia_id, :descripcion)";
+            $stmtHist = $this->db->prepare($sqlHist);
+            $stmtHist->execute([
+                ':propiedad_id' => $propiedadId,
+                ':monto' => $monto,
+                ':saldo_anterior' => $saldoAnterior,
+                ':saldo_nuevo' => $saldoNuevo,
+                ':referencia_tipo' => $referenciaTipo,
+                ':referencia_id' => $referenciaId,
+                ':descripcion' => $descripcion ?: 'Incremento de saldo'
+            ]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error incrementando saldo: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Aplica saldo a deuda (decrementa saldo)
+     * @param int $propiedadId
+     * @param float $monto
+     * @param int $deudaId
+     * @param string $descripcion
+     * @return bool
+     */
+    public function aplicarSaldoADeuda(int $propiedadId, float $monto, int $deudaId, string $descripcion = ''): bool {
+        try {
+            $this->db->beginTransaction();
+            
+            // Obtener saldo actual
+            $saldoAnterior = $this->getSaldo($propiedadId);
+            
+            if ($saldoAnterior < $monto) {
+                throw new Exception("Saldo insuficiente");
+            }
+            
+            $saldoNuevo = $saldoAnterior - $monto;
+            
+            // Actualizar saldo
+            $sql = "UPDATE {$this->table} SET saldo = :saldo WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':saldo' => $saldoNuevo, ':id' => $propiedadId]);
+            
+            // Registrar en historial
+            $sqlHist = "INSERT INTO propiedades_saldo_historial 
+                        (propiedad_id, tipo_movimiento, monto, saldo_anterior, saldo_nuevo, referencia_tipo, referencia_id, descripcion) 
+                        VALUES (:propiedad_id, 'aplicacion_deuda', :monto, :saldo_anterior, :saldo_nuevo, 'deuda', :deuda_id, :descripcion)";
+            $stmtHist = $this->db->prepare($sqlHist);
+            $stmtHist->execute([
+                ':propiedad_id' => $propiedadId,
+                ':monto' => $monto,
+                ':saldo_anterior' => $saldoAnterior,
+                ':saldo_nuevo' => $saldoNuevo,
+                ':deuda_id' => $deudaId,
+                ':descripcion' => $descripcion ?: 'Aplicación de saldo a deuda'
+            ]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error aplicando saldo: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Obtiene historial de movimientos de saldo
+     * @param int $propiedadId
+     * @param int $limit
+     * @return array
+     */
+    public function getSaldoHistorial(int $propiedadId, int $limit = 20): array {
+        $sql = "SELECT * FROM propiedades_saldo_historial 
+                WHERE propiedad_id = :propiedad_id 
+                ORDER BY created_at DESC 
+                LIMIT :limit";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':propiedad_id', $propiedadId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Busca propiedades por nombre o dueño
      * @param string $search
      * @param int|null $comunidadId

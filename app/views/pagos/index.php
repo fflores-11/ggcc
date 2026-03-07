@@ -137,7 +137,17 @@ require_once __DIR__ . '/../partials/header.php';
                             </select>
                         </div>
                     </div>
-                    <div class="alert alert-info">
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="aplicar_saldos" name="aplicar_saldos" value="1">
+                        <label class="form-check-label" for="aplicar_saldos">
+                            <i class="bi bi-piggy-bank me-1"></i>
+                            <strong>Aplicar saldos disponibles automáticamente</strong>
+                        </label>
+                        <div class="form-text">
+                            Si una propiedad tiene saldo disponible, se usará para pagar las nuevas deudas automáticamente.
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3">
                         <i class="bi bi-info-circle me-2"></i>
                         Se generarán deudas automáticas para todas las propiedades activas de la comunidad seleccionada.
                     </div>

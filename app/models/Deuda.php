@@ -269,4 +269,131 @@ class Deuda extends Model {
         
         return parent::create($data);
     }
+
+    /**
+     * Intenta pagar deudas pendientes con el saldo disponible de la propiedad
+     * @param int $propiedadId
+     * @return array ['deudas_pagadas' => int, 'monto_aplicado' => float, 'saldo_restante' => float]
+     */
+    public function intentarPagoConSaldo(int $propiedadId): array {
+        $resultado = [
+            'deudas_pagadas' => 0,
+            'monto_aplicado' => 0,
+            'saldo_restante' => 0
+        ];
+
+        try {
+            $this->db->beginTransaction();
+
+            // Obtener saldo actual
+            $propiedadModel = new Propiedad();
+            $saldoDisponible = $propiedadModel->getSaldo($propiedadId);
+
+            if ($saldoDisponible <= 0) {
+                $this->db->commit();
+                return $resultado;
+            }
+
+            // Obtener deudas pendientes ordenadas por antigüedad
+            $deudasPendientes = $this->getPendientesByPropiedad($propiedadId);
+            
+            if (empty($deudasPendientes)) {
+                $this->db->commit();
+                $resultado['saldo_restante'] = $saldoDisponible;
+                return $resultado;
+            }
+
+            $saldoRestante = $saldoDisponible;
+            $montoTotalAplicado = 0;
+            $deudasPagadas = [];
+
+            foreach ($deudasPendientes as $deuda) {
+                if ($saldoRestante <= 0) {
+                    break;
+                }
+
+                $montoDeuda = (float) $deuda['monto'];
+
+                if ($saldoRestante >= $montoDeuda) {
+                    // Pagar la deuda completa con saldo
+                    $propiedadModel->aplicarSaldoADeuda(
+                        $propiedadId,
+                        $montoDeuda,
+                        $deuda['id'],
+                        "Pago automático con saldo disponible"
+                    );
+
+                    // Marcar deuda como pagada con saldo
+                    $sqlUpdate = "UPDATE {$this->table} SET estado = 'Pagado', pagada_con_saldo = 1 WHERE id = :id";
+                    $stmtUpdate = $this->db->prepare($sqlUpdate);
+                    $stmtUpdate->execute([':id' => $deuda['id']]);
+
+                    $saldoRestante -= $montoDeuda;
+                    $montoTotalAplicado += $montoDeuda;
+                    $deudasPagadas[] = $deuda['id'];
+                }
+            }
+
+            $this->db->commit();
+
+            return [
+                'deudas_pagadas' => count($deudasPagadas),
+                'monto_aplicado' => $montoTotalAplicado,
+                'saldo_restante' => $saldoRestante,
+                'deuda_ids' => $deudasPagadas
+            ];
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log('Error al intentar pago con saldo: ' . $e->getMessage());
+            return $resultado;
+        }
+    }
+
+    /**
+     * Genera deudas mensuales e intenta aplicar saldos automáticamente
+     * @param int $comunidadId
+     * @param int $mes
+     * @param int $anio
+     * @param bool $aplicarSaldos Si es true, intenta pagar con saldo disponible
+     * @return array ['deudas_generadas' => int, 'saldos_aplicados' => array]
+     */
+    public function generarDeudasMesConSaldo(int $comunidadId, int $mes, int $anio, bool $aplicarSaldos = false): array {
+        // Generar deudas normalmente
+        $deudasGeneradas = $this->generarDeudasMes($comunidadId, $mes, $anio);
+        
+        $resultado = [
+            'deudas_generadas' => $deudasGeneradas,
+            'saldos_aplicados' => []
+        ];
+
+        if ($aplicarSaldos && $deudasGeneradas > 0) {
+            // Obtener propiedades afectadas
+            $sql = "SELECT DISTINCT propiedad_id FROM {$this->table} 
+                    WHERE mes = :mes AND anio = :anio 
+                    AND propiedad_id IN (
+                        SELECT id FROM propiedades WHERE comunidad_id = :comunidad_id AND activo = 1
+                    )";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':mes' => $mes,
+                ':anio' => $anio,
+                ':comunidad_id' => $comunidadId
+            ]);
+            $propiedades = $stmt->fetchAll();
+
+            foreach ($propiedades as $prop) {
+                $aplicacion = $this->intentarPagoConSaldo($prop['propiedad_id']);
+                if ($aplicacion['deudas_pagadas'] > 0) {
+                    $resultado['saldos_aplicados'][] = [
+                        'propiedad_id' => $prop['propiedad_id'],
+                        'deudas_pagadas' => $aplicacion['deudas_pagadas'],
+                        'monto_aplicado' => $aplicacion['monto_aplicado']
+                    ];
+                }
+            }
+        }
+
+        return $resultado;
+    }
 }

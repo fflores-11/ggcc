@@ -160,6 +160,142 @@ class Pago extends Model {
     }
 
     /**
+     * Registra un pago anticipado o libre (sin deuda específica)
+     * El monto va directamente al saldo de la propiedad
+     * @param array $data
+     * @return int|false ID del pago creado o false en error
+     */
+    public function registrarPagoAnticipado(array $data) {
+        try {
+            $this->db->beginTransaction();
+
+            // Insertar el pago (sin deuda asociada)
+            $pagoData = [
+                'propiedad_id' => $data['propiedad_id'],
+                'fecha' => $data['fecha'],
+                'monto' => $data['monto'],
+                'observaciones' => $data['observaciones'] ?? 'Pago anticipado',
+                'saldo_utilizado' => 0,
+                'recibo_generado' => 0
+            ];
+
+            $pagoId = parent::create($pagoData);
+
+            if (!$pagoId) {
+                throw new Exception('Error al crear el pago anticipado');
+            }
+
+            // El monto va al saldo de la propiedad
+            $propiedadModel = new Propiedad();
+            $propiedadModel->incrementarSaldo(
+                $data['propiedad_id'],
+                $data['monto'],
+                'Pago anticipado registrado',
+                'pago',
+                $pagoId
+            );
+
+            $this->db->commit();
+            return $pagoId;
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log('Error al registrar pago anticipado: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Registra un pago con posible sobrepago (monto > total de deudas)
+     * El exceso va al saldo de la propiedad
+     * @param array $data
+     * @param array $deudaIds Array de IDs de deudas a pagar
+     * @param float $montoEntregado Monto total entregado por el propietario
+     * @return array|false ['pago_id' => int, 'saldo_generado' => float] o false en error
+     */
+    public function registrarPagoConSaldo(array $data, array $deudaIds, float $montoEntregado) {
+        try {
+            $this->db->beginTransaction();
+
+            // Calcular total de las deudas seleccionadas
+            $sqlTotal = "SELECT SUM(monto) as total FROM deudas WHERE id IN (" . implode(',', array_fill(0, count($deudaIds), '?')) . ")";
+            $stmtTotal = $this->db->prepare($sqlTotal);
+            $stmtTotal->execute($deudaIds);
+            $totalDeudas = (float) $stmtTotal->fetchColumn();
+
+            if ($totalDeudas <= 0) {
+                throw new Exception('No se encontraron deudas válidas');
+            }
+
+            // Verificar que el monto entregado sea suficiente
+            if ($montoEntregado < $totalDeudas) {
+                throw new Exception("El monto entregado ($montoEntregado) es menor al total de deudas ($totalDeudas)");
+            }
+
+            // Calcular saldo a generar
+            $saldoGenerado = $montoEntregado - $totalDeudas;
+
+            // Insertar el pago con el monto total de las deudas
+            $pagoData = [
+                'propiedad_id' => $data['propiedad_id'],
+                'fecha' => $data['fecha'],
+                'monto' => $montoEntregado, // Monto total entregado
+                'observaciones' => $data['observaciones'] ?? '',
+                'saldo_utilizado' => 0,
+                'recibo_generado' => 0
+            ];
+
+            $pagoId = parent::create($pagoData);
+
+            if (!$pagoId) {
+                throw new Exception('Error al crear el pago');
+            }
+
+            // Insertar detalles y actualizar deudas
+            foreach ($deudaIds as $deudaId) {
+                $sqlDetalle = "INSERT INTO pagos_detalle (pago_id, deuda_id, monto_pagado) 
+                              VALUES (:pago_id, :deuda_id, 
+                              (SELECT monto FROM deudas WHERE id = :deuda_id2))";
+                $stmtDetalle = $this->db->prepare($sqlDetalle);
+                $stmtDetalle->execute([
+                    ':pago_id' => $pagoId,
+                    ':deuda_id' => $deudaId,
+                    ':deuda_id2' => $deudaId
+                ]);
+
+                // Actualizar estado de la deuda
+                $sqlUpdate = "UPDATE deudas SET estado = 'Pagado' WHERE id = :id";
+                $stmtUpdate = $this->db->prepare($sqlUpdate);
+                $stmtUpdate->execute([':id' => $deudaId]);
+            }
+
+            // Si hay saldo generado, agregarlo a la propiedad
+            if ($saldoGenerado > 0) {
+                $propiedadModel = new Propiedad();
+                $propiedadModel->incrementarSaldo(
+                    $data['propiedad_id'],
+                    $saldoGenerado,
+                    "Sobrepago de pago #$pagoId",
+                    'pago',
+                    $pagoId
+                );
+            }
+
+            $this->db->commit();
+            return [
+                'pago_id' => $pagoId,
+                'saldo_generado' => $saldoGenerado,
+                'total_deudas' => $totalDeudas
+            ];
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log('Error al registrar pago con saldo: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Obtiene pagos del mes actual
      * @return array
      */
