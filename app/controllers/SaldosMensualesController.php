@@ -347,4 +347,49 @@ class SaldosMensualesController {
 
         redirect("saldos-mensuales.php?action=show&comunidad_id={$saldo['comunidad_id']}&anio={$saldo['anio']}&mes={$saldo['mes']}");
     }
+
+    /**
+     * Elimina un período de saldo mensual (solo si no está cerrado)
+     */
+    public function eliminar(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('saldos-mensuales.php');
+        }
+
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('saldos-mensuales.php');
+        }
+
+        $saldoId = (int) ($_POST['saldo_id'] ?? 0);
+        
+        if (!$saldoId) {
+            flash('error', 'Período no encontrado');
+            redirect('saldos-mensuales.php');
+        }
+
+        $saldo = $this->saldoModel->find($saldoId);
+        if (!$saldo) {
+            flash('error', 'Período no encontrado');
+            redirect('saldos-mensuales.php');
+        }
+
+        // No permitir eliminar períodos cerrados
+        if ($saldo['cerrado']) {
+            flash('error', 'No se puede eliminar un período cerrado. Debe reabrirlo primero.');
+            redirect('saldos-mensuales.php');
+        }
+
+        $comunidadId = $saldo['comunidad_id'];
+        $anio = $saldo['anio'];
+        $mes = $saldo['mes'];
+
+        if ($this->saldoModel->eliminarPeriodo($saldoId)) {
+            flash('success', 'Registro de caja eliminado exitosamente: ' . getMonthName($mes) . ' ' . $anio);
+        } else {
+            flash('error', 'Error al eliminar el registro de caja');
+        }
+
+        redirect("saldos-mensuales.php?comunidad_id={$comunidadId}");
+    }
 }

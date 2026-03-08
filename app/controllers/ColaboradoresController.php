@@ -51,14 +51,14 @@ class ColaboradoresController {
                 'tipo_colaborador' => 'empresa',
                 'nombre' => trim($_POST['nombre'] ?? ''),
                 'numero_cliente' => trim($_POST['numero_cliente'] ?? ''),
-                'email' => null,
-                'whatsapp' => null,
-                'direccion' => null,
-                'region' => null,
-                'comuna' => null,
-                'banco' => null,
+                'email' => '',
+                'whatsapp' => '',
+                'direccion' => '',
+                'region' => '',
+                'comuna' => '',
+                'banco' => '',
                 'tipo_cuenta' => 'vista',
-                'numero_cuenta' => null,
+                'numero_cuenta' => '',
                 'activo' => 1
             ];
         } else {
@@ -148,14 +148,14 @@ class ColaboradoresController {
                 'tipo_colaborador' => 'empresa',
                 'nombre' => trim($_POST['nombre'] ?? ''),
                 'numero_cliente' => trim($_POST['numero_cliente'] ?? ''),
-                'email' => null,
-                'whatsapp' => null,
-                'direccion' => null,
-                'region' => null,
-                'comuna' => null,
-                'banco' => null,
+                'email' => '',
+                'whatsapp' => '',
+                'direccion' => '',
+                'region' => '',
+                'comuna' => '',
+                'banco' => '',
                 'tipo_cuenta' => 'vista',
-                'numero_cuenta' => null,
+                'numero_cuenta' => '',
                 'activo' => isset($_POST['activo']) ? 1 : 0
             ];
         } else {

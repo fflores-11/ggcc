@@ -40,6 +40,9 @@ switch ($action) {
     case 'traer-saldo-anterior':
         $controller->traerSaldoAnterior();
         break;
+    case 'eliminar':
+        $controller->eliminar();
+        break;
     default:
         $controller->index();
 }

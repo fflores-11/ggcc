@@ -191,6 +191,14 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Actualización de hash de password tras problemas de login
 - Creación de archivo faltante `propiedades/show.php`
 - Eliminación de credenciales visibles en página de login
+- **Corrección en Reporte de Egresos** - Cálculo correcto del Saldo: (pago gastos comunes + saldo mes anterior) - pago colaboradores
+
+### ✨ Nuevas Funcionalidades
+- **Eliminar Registro de Caja en Saldos Mensuales**
+  - Botón para eliminar registros históricos de caja (solo períodos abiertos)
+  - Confirmación previa con detalle del período a eliminar
+  - Protección CSRF en el formulario de eliminación
+  - No permite eliminar períodos cerrados (deben reabrirse primero)
 
 ### 📚 Documentación
 - `README.md` - Guía de instalación y uso

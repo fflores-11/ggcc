@@ -140,17 +140,38 @@ foreach ($egresos as $egreso) {
         <div class="mt-5 pt-3 border-top">
             <table class="table table-borderless">
                 <tr>
-                    <td width="70%" class="fw-bold text-uppercase fs-5">
-                        SALDO
+                    <td width="70%" class="fw-bold text-uppercase">
+                        PAGO GASTOS COMUNES (Ingresos)
                     </td>
-                    <td width="30%"></td>
+                    <td width="30%" class="text-end fw-bold">
+                        $ <?= number_format($totalIngresosGC, 0, ',', '.') ?>
+                    </td>
                 </tr>
                 <tr>
-                    <td class="fw-bold fs-5">
-                        TOTALES IGUALES
+                    <td class="fw-bold text-uppercase">
+                        SALDO MES ANTERIOR
+                    </td>
+                    <td class="text-end fw-bold">
+                        $ <?= number_format($saldoMesAnterior, 0, ',', '.') ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-uppercase text-danger">
+                        (-) PAGO COLABORADORES (Egresos)
+                    </td>
+                    <td class="text-end fw-bold text-danger">
+                        $ <?= number_format($totalEgresos, 0, ',', '.') ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2"><hr class="border-2 border-dark"></td>
+                </tr>
+                <tr class="table-active">
+                    <td class="fw-bold fs-5 text-uppercase">
+                        SALDO FINAL
                     </td>
                     <td class="text-end fw-bold fs-5">
-                        $ <?= number_format($totalEgresos, 0, ',', '.') ?>
+                        $ <?= number_format($saldo, 0, ',', '.') ?>
                     </td>
                 </tr>
             </table>

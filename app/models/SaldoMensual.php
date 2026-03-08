@@ -88,8 +88,9 @@ class SaldoMensual extends Model {
             $anioAnterior = $anio - 1;
         }
 
+        // Buscar el saldo del mes anterior (sin importar si está cerrado o no)
         $sql = "SELECT saldo_final FROM {$this->table} 
-                WHERE comunidad_id = :comunidad_id AND anio = :anio AND mes = :mes AND cerrado = 1";
+                WHERE comunidad_id = :comunidad_id AND anio = :anio AND mes = :mes";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':comunidad_id' => $comunidadId,
@@ -343,5 +344,22 @@ class SaldoMensual extends Model {
             'total_egresos' => (float) ($resumen['total_egresos'] ?? 0),
             'saldo_actual' => (float) ($resumen['saldo_actual_total'] ?? 0)
         ];
+    }
+
+    /**
+     * Elimina un registro de saldo mensual (solo si no está cerrado)
+     * @param int $saldoId
+     * @return bool
+     */
+    public function eliminarPeriodo(int $saldoId): bool {
+        $saldo = $this->find($saldoId);
+        if (!$saldo) return false;
+        
+        // No permitir eliminar períodos cerrados
+        if ($saldo['cerrado']) return false;
+        
+        $sql = "DELETE FROM {$this->table} WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':id' => $saldoId]);
     }
 }

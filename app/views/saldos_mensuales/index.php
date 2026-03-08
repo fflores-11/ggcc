@@ -212,10 +212,23 @@ $comunidadIdSeleccionada = isset($_GET['comunidad_id']) ? (int)$_GET['comunidad_
                                 <?php endif; ?>
                             </td>
                             <td class="text-center">
-                                <a href="saldos-mensuales.php?action=show&comunidad_id=<?= $saldo['comunidad_id'] ?>&anio=<?= $saldo['anio'] ?>&mes=<?= $saldo['mes'] ?>" 
-                                   class="btn btn-sm btn-outline-primary" title="Ver Detalle">
-                                    <i class="bi bi-eye"></i>
-                                </a>
+                                <div class="d-flex justify-content-center gap-1">
+                                    <a href="saldos-mensuales.php?action=show&comunidad_id=<?= $saldo['comunidad_id'] ?>&anio=<?= $saldo['anio'] ?>&mes=<?= $saldo['mes'] ?>" 
+                                       class="btn btn-sm btn-outline-primary" title="Ver Detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <?php if (!$periodoCerrado): ?>
+                                        <form action="saldos-mensuales.php?action=eliminar" method="POST" 
+                                              onsubmit="return confirm('¿Está seguro de eliminar este registro de caja de <?= getMonthName($saldo['mes']) ?> <?= $saldo['anio'] ?>? Esta acción no se puede deshacer.');"
+                                              class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+                                            <input type="hidden" name="saldo_id" value="<?= $saldo['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar Registro">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
