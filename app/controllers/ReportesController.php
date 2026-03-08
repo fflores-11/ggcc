@@ -244,6 +244,7 @@ class ReportesController {
 
     /**
      * Obtiene el saldo final del mes anterior
+     * Busca el último saldo registrado y calcula desde ahí si es necesario
      */
     private function getSaldoMesAnterior(int $mes, int $anio): float {
         // Calcular mes y año anterior
@@ -255,7 +256,7 @@ class ReportesController {
             $anioAnterior--;
         }
         
-        // Intentar obtener saldo guardado de la tabla saldos_mensuales
+        // Intentar obtener saldo guardado de la tabla saldos_mensuales para el mes anterior
         $sql = "SELECT saldo_final
                 FROM saldos_mensuales
                 WHERE mes = :mes AND anio = :anio
@@ -274,22 +275,95 @@ class ReportesController {
             return (float) $result['saldo_final'];
         }
         
-        // Si no hay registro, calcular: (ingresos - egresos) del mes anterior
-        $ingresosAnterior = $this->getTotalPagosGastosComunes($mesAnterior, $anioAnterior);
+        // Si no hay registro para el mes anterior, buscar el último saldo registrado antes de esa fecha
+        $sql = "SELECT saldo_final, mes, anio
+                FROM saldos_mensuales
+                WHERE (anio < :anio1) OR (anio = :anio2 AND mes < :mes)
+                ORDER BY anio DESC, mes DESC
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':anio1' => $anioAnterior,
+            ':anio2' => $anioAnterior,
+            ':mes' => $mesAnterior
+        ]);
+        
+        $ultimoSaldo = $stmt->fetch();
+        
+        if ($ultimoSaldo) {
+            // Tenemos un saldo base, calcular desde ese mes hasta el mes anterior objetivo
+            $saldoBase = (float) $ultimoSaldo['saldo_final'];
+            $mesBase = (int) $ultimoSaldo['mes'];
+            $anioBase = (int) $ultimoSaldo['anio'];
+            
+            // Calcular mes a mes desde el mes base hasta el mes anterior objetivo
+            $mesActual = $mesBase;
+            $anioActual = $anioBase;
+            $saldoCalculado = $saldoBase;
+            
+            while (!($anioActual == $anioAnterior && $mesActual == $mesAnterior)) {
+                // Avanzar al siguiente mes
+                $mesActual++;
+                if ($mesActual > 12) {
+                    $mesActual = 1;
+                    $anioActual++;
+                }
+                
+                // Sumar ingresos y restar egresos de ese mes
+                $ingresos = $this->getTotalPagosGastosComunes($mesActual, $anioActual);
+                $egresos = $this->getTotalEgresosColaboradores($mesActual, $anioActual);
+                $saldoCalculado = $saldoCalculado + $ingresos - $egresos;
+            }
+            
+            return $saldoCalculado;
+        }
+        
+        // Si no hay ningún saldo registrado, calcular desde el inicio (todos los meses anteriores)
+        // Calcular: sumar todos los ingresos y restar todos los egresos desde el inicio de los tiempos
+        // hasta el mes anterior objetivo
+        $sqlIngresos = "SELECT COALESCE(SUM(monto), 0) as total
+                       FROM pagos
+                       WHERE (YEAR(fecha) < :anio1) OR (YEAR(fecha) = :anio2 AND MONTH(fecha) <= :mes)";
+        
+        $stmt = $this->db->prepare($sqlIngresos);
+        $stmt->execute([
+            ':anio1' => $anioAnterior,
+            ':anio2' => $anioAnterior,
+            ':mes' => $mesAnterior
+        ]);
+        $totalIngresos = (float) ($stmt->fetch()['total'] ?? 0);
         
         $sqlEgresos = "SELECT COALESCE(SUM(monto), 0) as total
                        FROM pagos_colaboradores
-                       WHERE MONTH(fecha) = :mes AND YEAR(fecha) = :anio";
+                       WHERE (YEAR(fecha) < :anio1) OR (YEAR(fecha) = :anio2 AND MONTH(fecha) <= :mes)";
         
         $stmt = $this->db->prepare($sqlEgresos);
         $stmt->execute([
-            ':mes' => $mesAnterior,
-            ':anio' => $anioAnterior
+            ':anio1' => $anioAnterior,
+            ':anio2' => $anioAnterior,
+            ':mes' => $mesAnterior
+        ]);
+        $totalEgresos = (float) ($stmt->fetch()['total'] ?? 0);
+        
+        return $totalIngresos - $totalEgresos;
+    }
+    
+    /**
+     * Obtiene el total de egresos (pagos a colaboradores) por período
+     */
+    private function getTotalEgresosColaboradores(int $mes, int $anio): float {
+        $sql = "SELECT COALESCE(SUM(monto), 0) as total
+                FROM pagos_colaboradores
+                WHERE MONTH(fecha) = :mes AND YEAR(fecha) = :anio";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':mes' => $mes,
+            ':anio' => $anio
         ]);
         
         $result = $stmt->fetch();
-        $egresosAnterior = (float) ($result['total'] ?? 0);
-        
-        return $ingresosAnterior - $egresosAnterior;
+        return (float) ($result['total'] ?? 0);
     }
 }

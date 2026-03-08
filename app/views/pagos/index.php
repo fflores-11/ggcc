@@ -82,10 +82,21 @@ require_once __DIR__ . '/../partials/header.php';
                             </td>
                             <td class="text-end fw-bold"><?= formatMoney((float)$pago['monto']) ?></td>
                             <td class="text-center">
-                                <a href="pagos.php?action=recibo&id=<?= $pago['id'] ?>" 
-                                   class="btn btn-sm btn-outline-primary" title="Ver Recibo">
-                                    <i class="bi bi-receipt"></i> Recibo
-                                </a>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="pagos.php?action=recibo&id=<?= $pago['id'] ?>" 
+                                       class="btn btn-outline-primary" title="Ver Recibo">
+                                        <i class="bi bi-receipt"></i>
+                                    </a>
+                                    <a href="pagos.php?action=edit&id=<?= $pago['id'] ?>" 
+                                       class="btn btn-outline-warning" title="Editar Pago">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="pagos.php?action=delete&id=<?= $pago['id'] ?>&csrf_token=<?= generateCSRFToken() ?>" 
+                                       class="btn btn-outline-danger" title="Eliminar Pago"
+                                       onclick="return confirm('¿Está seguro de eliminar este pago? Las deudas asociadas volverán a estado Pendiente.')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

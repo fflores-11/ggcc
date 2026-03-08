@@ -42,4 +42,16 @@ switch ($action) {
     case 'generar-deudas':
         $controller->generarDeudas();
         break;
+        
+    case 'edit':
+        $controller->edit();
+        break;
+        
+    case 'update':
+        $controller->update();
+        break;
+        
+    case 'delete':
+        $controller->delete();
+        break;
 }

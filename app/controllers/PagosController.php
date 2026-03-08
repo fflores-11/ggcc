@@ -583,4 +583,168 @@ class PagosController {
         
         redirect('pagos.php');
     }
+
+    /**
+     * Muestra el formulario para editar un pago existente
+     */
+    public function edit(): void {
+        $id = (int) ($_GET['id'] ?? 0);
+        
+        if (!$id) {
+            flash('error', 'ID de pago no válido');
+            redirect('pagos.php');
+        }
+
+        $pago = $this->pagoModel->getWithDetails($id);
+        
+        if (!$pago) {
+            flash('error', 'Pago no encontrado');
+            redirect('pagos.php');
+        }
+
+        // Obtener todas las deudas pendientes de la propiedad
+        $deudasPendientes = $this->deudaModel->getPendientesByPropiedad($pago['propiedad_id']);
+        
+        // Obtener deudas ya pagadas en este pago
+        $deudasPagadas = $pago['detalles'] ?? [];
+        
+        // Combinar para mostrar en el formulario
+        $deudas = array_merge($deudasPagadas, $deudasPendientes);
+        
+        $title = 'Editar Pago #' . $pago['id'];
+        require_once VIEWS_PATH . '/pagos/edit.php';
+    }
+
+    /**
+     * Procesa la actualización de un pago
+     */
+    public function update(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('pagos.php');
+        }
+
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('pagos.php');
+        }
+
+        $pagoId = (int) ($_POST['pago_id'] ?? 0);
+        
+        if (!$pagoId) {
+            flash('error', 'ID de pago no válido');
+            redirect('pagos.php');
+        }
+
+        // Obtener el pago actual
+        $pagoActual = $this->pagoModel->getWithDetails($pagoId);
+        if (!$pagoActual) {
+            flash('error', 'Pago no encontrado');
+            redirect('pagos.php');
+        }
+
+        $nuevasDeudasIds = $_POST['deudas'] ?? [];
+        
+        // Validar que las nuevas deudas existan y estén pendientes
+        $deudasValidas = [];
+        $montoTotal = 0;
+        
+        foreach ($nuevasDeudasIds as $deudaId) {
+            $deuda = $this->deudaModel->getWithPropiedad((int) $deudaId);
+            // Permitir deudas que ya estaban en este pago o que están pendientes
+            $yaEstabaEnPago = false;
+            foreach ($pagoActual['detalles'] as $detalle) {
+                if ($detalle['deuda_id'] == $deudaId) {
+                    $yaEstabaEnPago = true;
+                    break;
+                }
+            }
+            
+            if ($deuda && ($deuda['estado'] === 'Pendiente' || $yaEstabaEnPago) && $deuda['propiedad_id'] == $pagoActual['propiedad_id']) {
+                $deudasValidas[] = (int) $deudaId;
+                $montoTotal += (float) $deuda['monto'];
+            }
+        }
+
+        if (empty($deudasValidas)) {
+            flash('error', 'No se encontraron deudas válidas');
+            redirect('pagos.php?action=edit&id=' . $pagoId);
+        }
+
+        // Preparar datos actualizados
+        $data = [
+            'fecha' => $_POST['fecha'] ?? $pagoActual['fecha'],
+            'monto' => $montoTotal,
+            'observaciones' => trim($_POST['observaciones'] ?? '')
+        ];
+
+        // Actualizar el pago usando el modelo
+        $actualizado = $this->pagoModel->update($pagoId, $data);
+        
+        if ($actualizado) {
+            flash('success', 'Pago actualizado exitosamente. Total: ' . formatMoney($montoTotal));
+            redirect('pagos.php?action=recibo&id=' . $pagoId);
+        } else {
+            flash('error', 'Error al actualizar el pago');
+            redirect('pagos.php?action=edit&id=' . $pagoId);
+        }
+    }
+
+    /**
+     * Elimina un pago y revierte las deudas a estado Pendiente
+     */
+    public function delete(): void {
+        $id = (int) ($_GET['id'] ?? 0);
+        
+        if (!$id) {
+            flash('error', 'ID de pago no válido');
+            redirect('pagos.php');
+        }
+
+        if (!isset($_GET['csrf_token']) || !verifyCSRFToken($_GET['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('pagos.php');
+        }
+
+        $pago = $this->pagoModel->getWithDetails($id);
+        
+        if (!$pago) {
+            flash('error', 'Pago no encontrado');
+            redirect('pagos.php');
+        }
+
+        $propiedadId = $pago['propiedad_id'];
+        $db = getDB();
+
+        try {
+            $db->beginTransaction();
+
+            // 1. Revertir las deudas a estado Pendiente
+            foreach ($pago['detalles'] as $detalle) {
+                $sql = "UPDATE deudas SET estado = 'Pendiente' WHERE id = :id";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([':id' => $detalle['deuda_id']]);
+            }
+
+            // 2. Eliminar los detalles del pago
+            $sql = "DELETE FROM pagos_detalle WHERE pago_id = :pago_id";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([':pago_id' => $id]);
+
+            // 3. Eliminar el pago
+            $sql = "DELETE FROM pagos WHERE id = :id";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([':id' => $id]);
+
+            $db->commit();
+            
+            flash('success', 'Pago eliminado exitosamente. Las deudas asociadas han vuelto a estado Pendiente.');
+            
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log('Error al eliminar pago: ' . $e->getMessage());
+            flash('error', 'Error al eliminar el pago: ' . $e->getMessage());
+        }
+
+        redirect('pagos.php');
+    }
 }
