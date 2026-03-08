@@ -231,12 +231,105 @@
             color: white;
             font-weight: 600;
         }
+
+        /* Logo dual mode styles - light/dark mode switching */
+        .sidebar-logo {
+            text-align: center;
+        }
+        
+        .sidebar-logo img {
+            display: block;
+            margin: 0 auto;
+            max-height: 80px;
+            max-width: 100%;
+        }
+        
+        /* FORZAR: siempre mostrar logo CLARO, ignorar preferencia del sistema */
+        .sidebar-logo {
+            text-align: center;
+            position: relative;
+            min-height: 80px;
+        }
+        
+        .sidebar-logo img {
+            display: block;
+            margin: 0 auto;
+            max-height: 80px;
+            max-width: 100%;
+            position: relative;
+        }
+        
+        .sidebar-logo .logo-light {
+            display: block !important;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 8px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .sidebar-logo .logo-dark {
+            display: none !important;
+            background-color: transparent;
+            padding: 10px;
+            border-radius: 8px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+        
+        .sidebar-logo .logo-dark {
+            display: none !important;
+            background-color: transparent;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        /* Media query deshabilitada - el logo claro siempre se muestra */
+        /*
+        @media (prefers-color-scheme: dark) {
+            .sidebar-logo .logo-light {
+                display: none !important;
+            }
+            .sidebar-logo .logo-dark {
+                display: block !important;
+            }
+        }
+        */
     </style>
 </head>
 <body>
+    <?php
+    // Cargar logos desde la base de datos para el sidebar (modo dual: claro/oscuro)
+    require_once __DIR__ . '/../../models/ConfiguracionSistema.php';
+    $configModelSidebar = new ConfiguracionSistema();
+    $logosSidebar = $configModelSidebar->getBothLogos();
+    ?>
+    
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-brand">
+            <?php if ($logosSidebar['light_exists'] || $logosSidebar['dark_exists']): ?>
+                <div class="sidebar-logo mb-3" id="sidebar-logo-wrapper">
+                    <?php if ($logosSidebar['light_exists']): ?>
+                        <img class="logo-light" 
+                             src="<?= $logosSidebar['light'] ?>" 
+                             alt="Logo"
+                             onerror="this.style.display='none'; console.error('Error cargando logo claro:', this.src);">
+                    <?php endif; ?>
+                    <?php if ($logosSidebar['dark_exists']): ?>
+                        <img class="logo-dark" 
+                             src="<?= $logosSidebar['dark'] ?>" 
+                             alt="Logo"
+                             onerror="this.style.display='none'; console.error('Error cargando logo oscuro:', this.src);">
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <!-- Debug: No logos found -->
+                <div style="display: none;">Light: <?= $logosSidebar['light'] ?? 'N/A' ?>, Dark: <?= $logosSidebar['dark'] ?? 'N/A' ?></div>
+            <?php endif; ?>
             <h4><?= APP_NAME ?></h4>
             <small>Administración</small>
         </div>
@@ -289,6 +382,9 @@
             <div class="sidebar-divider"></div>
             <div class="menu-title">Administración</div>
             
+            <a href="configuracion.php" class="<?= basename($_SERVER['PHP_SELF']) === 'configuracion.php' ? 'active' : '' ?>">
+                <i class="bi bi-gear"></i> Configuración Sistema
+            </a>
             <a href="configuracion_smtp.php" class="<?= basename($_SERVER['PHP_SELF']) === 'configuracion_smtp.php' ? 'active' : '' ?>">
                 <i class="bi bi-envelope-gear"></i> Configuración SMTP
             </a>

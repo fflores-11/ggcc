@@ -20,36 +20,113 @@ require_once __DIR__ . '/../partials/header.php';
             <div class="icon"><i class="bi bi-building"></i></div>
             <div class="number"><?= $metricas['total_comunidades'] ?></div>
             <div class="label">Comunidades Activas</div>
+    </div>
+</div>
+
+<!-- Resumen Financiero - Mes Actual -->
+<?php if (isset($resumenFinanciero) && !empty($resumenFinanciero)): ?>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Resumen Financiero - <?= getMonthName(date('n')) ?> <?= date('Y') ?></h4>
+            <a href="saldos-mensuales.php" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-eye me-1"></i>Ver Detalle
+            </a>
         </div>
     </div>
     
-    <!-- Card 2: Total Propiedades -->
-    <div class="col-md-3 mb-4">
-        <div class="stat-card success">
-            <div class="icon"><i class="bi bi-house-door"></i></div>
-            <div class="number"><?= $metricas['total_propiedades'] ?></div>
-            <div class="label">Propiedades Registradas</div>
+    <!-- Total de Propiedades -->
+    <div class="col-md-2 mb-4">
+        <div class="stat-card primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="text-center mb-2">
+                <?php 
+                $totalProp = $metricas['total_propiedades'] ?? 0;
+                $totalComunidades = $resumenFinanciero['total_comunidades'] ?? 1;
+                $pctProp = $totalComunidades > 0 ? round(($totalProp / $totalComunidades) * 100, 1) : 0;
+                ?>
+                <span class="badge bg-light text-dark"><?= $pctProp ?>%</span>
+            </div>
+            <div class="icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="bi bi-house-door"></i></div>
+            <div class="number"><?= number_format($totalProp) ?></div>
+            <div class="label" style="color: rgba(255,255,255,0.9);">Total Propiedades</div>
         </div>
     </div>
     
-    <!-- Card 3: Total Deuda -->
-    <div class="col-md-3 mb-4">
-        <div class="stat-card warning">
-            <div class="icon"><i class="bi bi-exclamation-triangle"></i></div>
-            <div class="number"><?= formatMoney($metricas['total_deuda']) ?></div>
-            <div class="label">Deuda Total Pendiente</div>
+    <!-- Total Deudas -->
+    <div class="col-md-2 mb-4">
+        <div class="stat-card warning" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+            <div class="text-center mb-2">
+                <?php 
+                $totalDeuda = $metricas['total_deuda'] ?? 0;
+                $totalRecaudado = $resumenFinanciero['total_ingresos'] ?? 0;
+                $totalDisponible = $totalRecaudado + $totalDeuda;
+                $pctDeuda = $totalDisponible > 0 ? round(($totalDeuda / $totalDisponible) * 100, 1) : 0;
+                ?>
+                <span class="badge bg-light text-danger"><?= $pctDeuda ?>%</span>
+            </div>
+            <div class="icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="number"><?= formatMoney($totalDeuda) ?></div>
+            <div class="label" style="color: rgba(255,255,255,0.9);">Total Deudas</div>
         </div>
     </div>
     
-    <!-- Card 4: Pagos del Mes -->
-    <div class="col-md-3 mb-4">
-        <div class="stat-card danger">
-            <div class="icon"><i class="bi bi-cash-coin"></i></div>
-            <div class="number"><?= formatMoney($metricas['pagos_mes_actual']) ?></div>
-            <div class="label">Recaudado Este Mes (<?= $metricas['cantidad_pagos_mes'] ?> pagos)</div>
+    <!-- Total Recaudado -->
+    <div class="col-md-2 mb-4">
+        <div class="stat-card success" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+            <div class="text-center mb-2">
+                <span class="badge bg-light text-success">100%</span>
+            </div>
+            <div class="icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="bi bi-cash-coin"></i></div>
+            <div class="number"><?= formatMoney($totalRecaudado) ?></div>
+            <div class="label" style="color: rgba(255,255,255,0.9);">Total Recaudado</div>
+        </div>
+    </div>
+    
+    <!-- Saldo Actual -->
+    <div class="col-md-2 mb-4">
+        <div class="stat-card info" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+            <div class="text-center mb-2">
+                <?php 
+                $saldoActual = $resumenFinanciero['saldo_actual'] ?? 0;
+                $pctSaldo = $totalRecaudado > 0 ? round(($saldoActual / $totalRecaudado) * 100, 1) : 0;
+                ?>
+                <span class="badge bg-light text-info"><?= $pctSaldo ?>%</span>
+            </div>
+            <div class="icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="bi bi-wallet2"></i></div>
+            <div class="number"><?= formatMoney($saldoActual) ?></div>
+            <div class="label" style="color: rgba(255,255,255,0.9);">Saldo Actual</div>
+        </div>
+    </div>
+    
+    <!-- Egresos Mes -->
+    <div class="col-md-2 mb-4">
+        <div class="stat-card danger" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+            <div class="text-center mb-2">
+                <?php 
+                $egresosMes = $resumenFinanciero['total_egresos'] ?? 0;
+                $pctEgresos = $totalRecaudado > 0 ? round(($egresosMes / $totalRecaudado) * 100, 1) : 0;
+                ?>
+                <span class="badge bg-light text-warning"><?= $pctEgresos ?>%</span>
+            </div>
+            <div class="icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="bi bi-arrow-up-circle"></i></div>
+            <div class="number"><?= formatMoney($egresosMes) ?></div>
+            <div class="label" style="color: rgba(255,255,255,0.9);">Egresos Mes</div>
+        </div>
+    </div>
+    
+    <!-- Comunidades -->
+    <div class="col-md-2 mb-4">
+        <div class="stat-card secondary" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+            <div class="text-center mb-2">
+                <span class="badge bg-light text-dark">100%</span>
+            </div>
+            <div class="icon" style="background: rgba(255,255,255,0.5); color: #333;"><i class="bi bi-building"></i></div>
+            <div class="number"><?= $totalComunidades ?></div>
+            <div class="label" style="color: #555;">Comunidades</div>
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="row">
     <!-- Accesos Rápidos -->

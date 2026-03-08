@@ -315,4 +315,33 @@ class SaldoMensual extends Model {
         $result = $stmt->fetch();
         return $result ? (float) $result['saldo_final'] : null;
     }
+
+    /**
+     * Obtiene resumen financiero del mes actual para todas las comunidades
+     * @param int $mes
+     * @param int $anio
+     * @return array Resumen con totales
+     */
+    public function getResumenFinancieroMensual(int $mes, int $anio): array {
+        $sql = "SELECT 
+                    COUNT(DISTINCT comunidad_id) as total_comunidades,
+                    SUM(saldo_mes_anterior) as saldo_anterior_total,
+                    SUM(total_ingresos_gc + ajustes_ingreso) as total_ingresos,
+                    SUM(total_egresos_colaboradores + ajustes_egreso) as total_egresos,
+                    SUM(saldo_final) as saldo_actual_total
+                FROM {$this->table}
+                WHERE mes = :mes AND anio = :anio";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':mes' => $mes, ':anio' => $anio]);
+        $resumen = $stmt->fetch();
+        
+        return [
+            'total_comunidades' => (int) ($resumen['total_comunidades'] ?? 0),
+            'saldo_anterior' => (float) ($resumen['saldo_anterior_total'] ?? 0),
+            'total_ingresos' => (float) ($resumen['total_ingresos'] ?? 0),
+            'total_egresos' => (float) ($resumen['total_egresos'] ?? 0),
+            'saldo_actual' => (float) ($resumen['saldo_actual_total'] ?? 0)
+        ];
+    }
 }

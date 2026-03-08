@@ -21,6 +21,20 @@ define('APP_NAME', 'Sistema GGCC');
 define('APP_VERSION', '1.0.0');
 define('BASE_URL', '/');
 
+// === CONFIGURACIÓN DE URL DEL SERVIDOR ===
+// Detectar protocolo automáticamente (http o https)
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+
+// Dominio o IP del servidor (configurable)
+define('SERVER_DOMAIN', '10.10.12.140');  // Cambiar aquí si cambia la IP o dominio
+
+// URL completa base (ej: http://10.10.12.140/)
+define('BASE_URL_FULL', $protocol . SERVER_DOMAIN . '/');
+
+// URLs para assets e imágenes
+define('ASSETS_URL', BASE_URL_FULL . 'assets/');
+define('IMAGES_URL', ASSETS_URL . 'images/');
+
 // Configuración de email
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587);

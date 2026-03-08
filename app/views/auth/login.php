@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - <?= APP_NAME ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <?php
+    // Cargar logos desde la base de datos (modo dual: claro/oscuro)
+    require_once __DIR__ . '/../../models/ConfiguracionSistema.php';
+    $configModel = new ConfiguracionSistema();
+    $logos = $configModel->getBothLogos();
+    ?>
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -63,6 +69,56 @@
         .input-group-lg .form-control:focus + .btn-outline-secondary {
             border-color: #667eea;
         }
+
+        /* Logo dual mode styles - light/dark mode switching */
+        .login-logo-container {
+            text-align: center;
+            position: relative;
+            min-height: 120px;
+        }
+        
+        .login-logo-container img {
+            display: block;
+            margin: 0 auto;
+            max-width: 200px;
+            max-height: 120px;
+            object-fit: contain;
+            position: relative;
+        }
+        
+        /* Por defecto: mostrar logo CLARO */
+        .login-logo-container .logo-light {
+            display: block !important;
+            background-color: transparent;
+            padding: 10px;
+            border-radius: 8px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .login-logo-container .logo-dark {
+            display: none !important;
+            background-color: rgba(45, 55, 72, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+        
+        /* Media query deshabilitada - el logo claro siempre se muestra */
+        /*
+        @media (prefers-color-scheme: dark) {
+            .login-logo-container .logo-light {
+                display: none !important;
+            }
+            .login-logo-container .logo-dark {
+                display: block !important;
+            }
+        }
+        */
     </style>
 </head>
 <body>
@@ -79,6 +135,28 @@
                 </div>
             </div>
             <div class="col-md-7 login-right">
+                <!-- Logo con detección automática de modo oscuro -->
+                <div class="text-center mb-4 login-logo-container">
+                    <?php if ($logos['light_exists'] || $logos['dark_exists']): ?>
+                        <?php if ($logos['light_exists']): ?>
+                            <img class="logo-light" 
+                                 src="<?= $logos['light'] ?>" 
+                                 alt="Logo"
+                                 onerror="this.style.display='none'; console.error('Error cargando logo claro:', this.src);">
+                        <?php endif; ?>
+                        <?php if ($logos['dark_exists']): ?>
+                            <img class="logo-dark" 
+                                 src="<?= $logos['dark'] ?>" 
+                                 alt="Logo"
+                                 onerror="this.style.display='none'; console.error('Error cargando logo oscuro:', this.src);">
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div class="display-4 text-primary mb-2">
+                            <i class="bi bi-building"></i>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                
                 <h3 class="mb-4 text-center">Iniciar Sesión</h3>
                 
                 <?php if ($error = flash('error')): ?>

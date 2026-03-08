@@ -7,10 +7,14 @@
 class DashboardController {
     private Dashboard $dashboardModel;
     private Comunidad $comunidadModel;
+    private ConfiguracionSistema $configModel;
+    private SaldoMensual $saldoModel;
 
     public function __construct() {
         $this->dashboardModel = new Dashboard();
         $this->comunidadModel = new Comunidad();
+        $this->configModel = new ConfiguracionSistema();
+        $this->saldoModel = new SaldoMensual();
     }
 
     /**
@@ -29,6 +33,9 @@ class DashboardController {
         $labelsGrafico = array_column($estadisticasMensuales, 'mes_nombre');
         $datosPagos = array_column($estadisticasMensuales, 'pagos');
         $datosDeudas = array_column($estadisticasMensuales, 'deudas');
+        
+        // Obtener resumen financiero del mes actual
+        $resumenFinanciero = $this->saldoModel->getResumenFinancieroMensual(date('n'), date('Y'));
         
         $title = 'Dashboard';
         require_once VIEWS_PATH . '/dashboard/index.php';
