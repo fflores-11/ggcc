@@ -10,6 +10,15 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 #### ✨ Nuevas Funcionalidades
 
+##### Sistema de Logos Dual (Claro/Oscuro)
+- **Configuración de logos dual para el sistema**
+  - Soporte para logo en modo claro y logo en modo oscuro
+  - Subida independiente de ambos logos desde el panel de configuración
+  - Almacenamiento de rutas en base de datos (`logo_path` y `logo_path_dark`)
+  - Visualización centrada con fondo apropiado para cada modo
+  - Aplicación en sidebar del panel administrativo y página de login
+  - CSS optimizado para mostrar siempre el logo claro (deshabilitado auto-detección por preferencias del sistema)
+
 ##### Fase 1: Base del Sistema + Autenticación + Mantenedores
 - **Arquitectura MVC** completa con separación de responsabilidades
   - Controladores para cada módulo
