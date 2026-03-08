@@ -4,7 +4,7 @@ Todos los cambios notables en el proyecto Sistema de Gestión de Gastos Comunes 
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
-## [1.0.0] - 2026-03-06
+## [1.0.0] - 2026-03-08
 
 ### 🎉 Primera Versión Completa - Sistema Funcional
 
@@ -127,12 +127,40 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - Se usa automáticamente cuando no hay imagen configurada
   - Permisos y propietario correctos (www-data:www-data, 755)
   - Configuración en base de datos actualizada
+- **Restricción por Comunidad para Usuarios Administradores**
+  - Nuevo campo `comunidad_id` en tabla `usuarios`
+  - Usuarios con rol "Administrador" deben tener asignada una comunidad
+  - Usuarios solo pueden acceder a registros de su comunidad asignada
+  - Super Admin (`admin`) tiene acceso a todas las comunidades
+  - Helpers: `getUserComunidadId()`, `hasAccessToComunidad()`, `requireAccessToComunidad()`
+  - Selector de comunidad dinámico en formulario de usuarios (solo para admin/presidente)
 - **Configuración de imagen de fondo para Login**
   - Nueva sección en Configuración del Sistema
   - Permite subir imagen personalizada de fondo para la página de inicio
   - Modos de visualización: Cover (cubrir), Contain (ajustar), Repeat (repetir)
   - Si no hay imagen configurada, usa el fondo azul por defecto
   - Vista previa en tiempo real de la imagen seleccionada
+- **Recuperación de Contraseña (Olvidé mi contraseña)**
+  - Nuevas columnas `reset_token` y `reset_expires` en tabla `usuarios`
+  - Enlace "¿Olvidaste tu contraseña?" en página de login
+  - Formulario para solicitar recuperación por email
+  - Token único de 64 caracteres con 24 horas de validez
+  - Protección anti-duplicados: máximo 1 email cada 30 segundos por dirección
+  - Formulario para restablecer contraseña con validación
+  - Envío de email usando configuración SMTP del sistema
+  - Vista previa del enlace en modo desarrollo (cuando no hay SMTP)
+  - Funciones en AuthController: `forgotPassword()`, `sendResetLink()`, `resetPassword()`, `doResetPassword()`
+- **Bloqueo de Botones Durante Operaciones (Anti-Doble-Submit)**
+  - Script JavaScript centralizado `form-loading.js`
+  - Detecta automáticamente todos los formularios POST
+  - Protección anti-duplicados con WeakSet y atributos data-
+  - Captura en fase de bubbling para interceptar envíos temprano
+  - Muestra spinner de Bootstrap durante operaciones
+  - Cambia texto del botón a "Procesando..."
+  - Compatible con confirmaciones (`onclick="return confirm(...)"`)
+  - Funciona con enlaces de acción (eliminar, editar, etc.)
+  - Se desbloquea automáticamente al volver con botón "Atrás"
+  - Incluido en todas las páginas: sistema principal y autenticación
 
 #### 🔒 Seguridad Implementada
 - Password hashing con `password_hash()` (algoritmo bcrypt de PHP 8.1)
@@ -143,6 +171,8 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Validaciones server-side en todos los formularios
 - Soft delete en lugar de eliminación física
 - No permite desactivar/auto-eliminarse a sí mismo
+- Protección anti-duplicados: rate limiting de 30 segundos para recuperación de contraseña
+- Tokens de recuperación con expiración de 24 horas
 
 #### 🗄️ Base de Datos
 - **Tablas creadas:**
@@ -156,6 +186,10 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - `envios_correo_detalle` - Detalle de envíos individuales
   - `configuracion_smtp` - Configuración SMTP por comunidad (nueva)
   - `vista_resumen_pagos` - Vista para reportes
+- **Nuevas columnas:**
+  - `usuarios.reset_token` - Token para recuperación de contraseña
+  - `usuarios.reset_expires` - Fecha de expiración del token
+  - `usuarios.comunidad_id` - Comunidad asignada (para admin/presidente)
 - **Relaciones:**
   - Foreign keys con ON DELETE CASCADE donde corresponde
   - Índices optimizados en campos de búsqueda frecuente
@@ -194,6 +228,10 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 │   └── views/           # 25+ vistas organizadas por módulo
 ├── config/              # Configuración DB, autoload, utilidades
 ├── public/              # Punto de entrada + assets
+│   └── assets/
+│       ├── images/      # Logos e imágenes de fondo
+│       └── js/          # Scripts JavaScript
+│           └── form-loading.js  # Anti-doble-submit (nuevo)
 ├── vendor/              # Librerías Composer (Dompdf, etc.)
 └── docs/                # Documentación (SMTP_CONFIG.md)
 ```
@@ -204,6 +242,8 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Creación de archivo faltante `propiedades/show.php`
 - Eliminación de credenciales visibles en página de login
 - **Corrección en Reporte de Egresos** - Cálculo correcto del Saldo: (pago gastos comunes + saldo mes anterior) - pago colaboradores
+- **Corrección de parámetros duplicados en SQL** - Resuelto error "Invalid parameter number" en `ReportesController`
+- **Corrección de token CSRF** - Agregado a vistas de autenticación independientes (`forgot-password.php`, `reset-password.php`)
 
 ### ✨ Nuevas Funcionalidades
 - **Eliminar Registro de Caja en Saldos Mensuales**

@@ -14,9 +14,15 @@ $usuario = $usuario ?? [
     'nombre' => '',
     'email' => '',
     'rol' => 'administrador',
-    'activo' => 1
+    'activo' => 1,
+    'comunidad_id' => ''
 ];
+
+// Obtener comunidades para el selector
+$comunidadModel = new Comunidad();
+$comunidades = $comunidadModel->getForSelect();
 ?>
+
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4><?= $title ?></h4>
@@ -73,7 +79,7 @@ $usuario = $usuario ?? [
 
                 <div class="mb-4">
                     <label for="rol" class="form-label">Rol <span class="text-danger">*</span></label>
-                    <select class="form-select" id="rol" name="rol" required>
+                    <select class="form-select" id="rol" name="rol" required onchange="toggleComunidadField()">
                         <option value="administrador" <?= $usuario['rol'] === 'administrador' ? 'selected' : '' ?>>
                             Administrador
                         </option>
@@ -86,8 +92,24 @@ $usuario = $usuario ?? [
                     </select>
                     <div class="form-text">
                         <strong>Super Admin:</strong> Control total del sistema<br>
-                        <strong>Administrador:</strong> Gestión operativa<br>
+                        <strong>Administrador:</strong> Gestión operativa de UNA comunidad<br>
                         <strong>Presidente:</strong> Acceso limitado a su comunidad
+                    </div>
+                </div>
+
+                <!-- Campo Comunidad - Solo visible para Administrador y Presidente -->
+                <div class="mb-4" id="comunidad_field" style="display: <?= in_array($usuario['rol'], ['administrador', 'presidente']) ? 'block' : 'none' ?>;">
+                    <label for="comunidad_id" class="form-label">Comunidad Asignada <span class="text-danger">*</span></label>
+                    <select class="form-select" id="comunidad_id" name="comunidad_id">
+                        <option value="">Seleccione una comunidad...</option>
+                        <?php foreach ($comunidades as $com): ?>
+                            <option value="<?= $com['id'] ?>" <?= $usuario['comunidad_id'] == $com['id'] ? 'selected' : '' ?>>
+                                <?= e($com['nombre']) ?> (<?= e($com['comuna'] ?? 'N/A') ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="form-text">
+                        El usuario solo podrá acceder a los registros de esta comunidad.
                     </div>
                 </div>
 
@@ -159,6 +181,25 @@ $usuario = $usuario ?? [
             icon.classList.add('bi-eye');
         }
     });
+
+    // Mostrar/ocultar campo comunidad según el rol
+    function toggleComunidadField() {
+        const rolSelect = document.getElementById('rol');
+        const comunidadField = document.getElementById('comunidad_field');
+        const comunidadSelect = document.getElementById('comunidad_id');
+        
+        if (rolSelect.value === 'administrador' || rolSelect.value === 'presidente') {
+            comunidadField.style.display = 'block';
+            comunidadSelect.setAttribute('required', 'required');
+        } else {
+            comunidadField.style.display = 'none';
+            comunidadSelect.removeAttribute('required');
+            comunidadSelect.value = '';
+        }
+    }
+
+    // Ejecutar al cargar la página
+    toggleComunidadField();
 </script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

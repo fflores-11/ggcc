@@ -179,6 +179,56 @@ function verifyCSRFToken(string $token): bool {
 }
 
 /**
+ * Obtiene el ID de la comunidad asignada al usuario logueado
+ * @return int|null
+ */
+function getUserComunidadId(): ?int {
+    return $_SESSION['user_comunidad_id'] ?? null;
+}
+
+/**
+ * Verifica si el usuario tiene acceso a una comunidad específica
+ * @param int $comunidadId
+ * @return bool
+ */
+function hasAccessToComunidad(int $comunidadId): bool {
+    // Super admin tiene acceso a todo
+    if (getUserRole() === 'admin') {
+        return true;
+    }
+    
+    // Administradores y presidentes solo acceden a su comunidad asignada
+    $userComunidadId = getUserComunidadId();
+    return $userComunidadId === $comunidadId;
+}
+
+/**
+ * Requiere acceso a una comunidad específica o redirige
+ * @param int $comunidadId
+ */
+function requireAccessToComunidad(int $comunidadId): void {
+    if (!hasAccessToComunidad($comunidadId)) {
+        flash('error', 'No tiene permisos para acceder a esta comunidad');
+        redirect('index.php');
+    }
+}
+
+/**
+ * Obtiene el filtro de comunidad para consultas SQL
+ * @return string
+ */
+function getComunidadFilter(): string {
+    $userRol = getUserRole();
+    $comunidadId = getUserComunidadId();
+    
+    if ($userRol !== 'admin' && $comunidadId !== null) {
+        return " AND comunidad_id = " . (int)$comunidadId;
+    }
+    
+    return '';
+}
+
+/**
  * Formatea un número como moneda
  * @param float $amount
  * @return string

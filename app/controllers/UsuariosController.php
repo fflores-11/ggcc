@@ -15,7 +15,18 @@ class UsuariosController {
      * Lista todos los usuarios
      */
     public function index(): void {
-        $usuarios = $this->userModel->all('nombre', 'ASC');
+        // Super admin ve todos los usuarios, administradores solo los de su comunidad
+        if (getUserRole() === 'admin') {
+            $usuarios = $this->userModel->getAllWithComunidad();
+        } else {
+            $comunidadId = getUserComunidadId();
+            if ($comunidadId) {
+                $usuarios = $this->userModel->getByComunidad($comunidadId);
+            } else {
+                $usuarios = [];
+            }
+        }
+        
         $title = 'Mantenedor de Usuarios';
         require_once VIEWS_PATH . '/usuarios/index.php';
     }
@@ -48,6 +59,13 @@ class UsuariosController {
             'rol' => $_POST['rol'] ?? 'administrador',
             'activo' => isset($_POST['activo']) ? 1 : 0
         ];
+
+        // Agregar comunidad_id para administradores y presidentes
+        if (in_array($data['rol'], ['administrador', 'presidente'])) {
+            $data['comunidad_id'] = !empty($_POST['comunidad_id']) ? (int)$_POST['comunidad_id'] : null;
+        } else {
+            $data['comunidad_id'] = null; // Super admin no tiene comunidad asignada
+        }
 
         $validation = $this->userModel->validate($data);
         
@@ -121,6 +139,13 @@ class UsuariosController {
             'rol' => $_POST['rol'] ?? 'administrador',
             'activo' => isset($_POST['activo']) ? 1 : 0
         ];
+
+        // Agregar comunidad_id para administradores y presidentes
+        if (in_array($data['rol'], ['administrador', 'presidente'])) {
+            $data['comunidad_id'] = !empty($_POST['comunidad_id']) ? (int)$_POST['comunidad_id'] : null;
+        } else {
+            $data['comunidad_id'] = null; // Super admin no tiene comunidad asignada
+        }
 
         // Solo actualizar password si se proporciona
         if (!empty($_POST['password'])) {

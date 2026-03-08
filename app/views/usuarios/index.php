@@ -23,6 +23,7 @@ require_once __DIR__ . '/../partials/header.php';
                     <th>Nombre</th>
                     <th>Email</th>
                     <th>Rol</th>
+                    <th>Comunidad</th>
                     <th>Estado</th>
                     <th>Último Acceso</th>
                     <th class="text-end">Acciones</th>
@@ -31,7 +32,7 @@ require_once __DIR__ . '/../partials/header.php';
             <tbody>
                 <?php if (empty($usuarios)): ?>
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-5">
+                        <td colspan="8" class="text-center text-muted py-5">
                             <i class="bi bi-people display-4 d-block mb-3"></i>
                             No hay usuarios registrados
                         </td>
@@ -54,6 +55,13 @@ require_once __DIR__ . '/../partials/header.php';
                                 ?>">
                                     <?= ucfirst($usuario['rol']) ?>
                                 </span>
+                            </td>
+                            <td>
+                                <?php if ($usuario['comunidad_nombre']): ?>
+                                    <small class="text-muted"><?= e($usuario['comunidad_nombre']) ?></small>
+                                <?php else: ?>
+                                    <small class="text-muted">-</small>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <span class="badge bg-<?= $usuario['activo'] ? 'success' : 'warning' ?>">

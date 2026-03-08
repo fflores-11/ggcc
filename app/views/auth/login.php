@@ -229,6 +229,12 @@ $bgConfig = $configModel->getLoginBackgroundConfig();
                             Ingresar al Sistema
                         </button>
                     </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="login.php?action=forgot-password" class="text-decoration-none" style="color: #667eea;">
+                            <i class="bi bi-key me-1"></i>¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
                 </form>
                 
                 <div class="text-center mt-4 text-muted">

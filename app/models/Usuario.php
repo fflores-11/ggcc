@@ -144,9 +144,169 @@ class Usuario extends Model {
             $errors[] = 'El rol no es válido';
         }
 
+        // Validar comunidad_id para administradores
+        if ($data['rol'] === 'administrador') {
+            if (empty($data['comunidad_id'])) {
+                $errors[] = 'Debe seleccionar una comunidad para el usuario administrador';
+            } elseif (!is_numeric($data['comunidad_id'])) {
+                $errors[] = 'La comunidad seleccionada no es válida';
+            }
+        }
+
         return [
             'valid' => empty($errors),
             'errors' => $errors
         ];
+    }
+
+    /**
+     * Obtiene usuarios por comunidad
+     * @param int $comunidadId
+     * @return array
+     */
+    public function getByComunidad(int $comunidadId): array {
+        $sql = "SELECT u.*, c.nombre as comunidad_nombre 
+                FROM {$this->table} u 
+                LEFT JOIN comunidades c ON u.comunidad_id = c.id 
+                WHERE u.comunidad_id = :comunidad_id AND u.activo = 1
+                ORDER BY u.nombre";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':comunidad_id' => $comunidadId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene la comunidad asignada a un usuario
+     * @param int $userId
+     * @return array|null
+     */
+    public function getComunidad(int $userId): ?array {
+        $sql = "SELECT u.comunidad_id, c.nombre as comunidad_nombre, c.*
+                FROM {$this->table} u 
+                LEFT JOIN comunidades c ON u.comunidad_id = c.id 
+                WHERE u.id = :id AND u.activo = 1
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $userId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    /**
+     * Verifica si un usuario tiene acceso a una comunidad específica
+     * @param int $userId
+     * @param int $comunidadId
+     * @return bool
+     */
+    public function hasAccessToComunidad(int $userId, int $comunidadId): bool {
+        $sql = "SELECT rol, comunidad_id FROM {$this->table} WHERE id = :id AND activo = 1 LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $userId]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Super admin tiene acceso a todo
+        if ($user['rol'] === 'admin') {
+            return true;
+        }
+
+        // Administrador y presidente solo acceden a su comunidad asignada
+        return (int)$user['comunidad_id'] === $comunidadId;
+    }
+
+    /**
+     * Obtiene todos los usuarios con información de comunidad
+     * @return array
+     */
+    public function getAllWithComunidad(): array {
+        $sql = "SELECT u.*, c.nombre as comunidad_nombre 
+                FROM {$this->table} u 
+                LEFT JOIN comunidades c ON u.comunidad_id = c.id 
+                ORDER BY u.nombre";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Busca usuario por email
+     * @param string $email
+     * @return array|null
+     */
+    public function findByEmail(string $email): ?array {
+        $sql = "SELECT * FROM {$this->table} WHERE email = :email AND activo = 1 LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':email' => $email]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    /**
+     * Genera token de recuperación de contraseña
+     * @param int $userId
+     * @return string|false
+     */
+    public function generateResetToken(int $userId): string|false {
+        $token = bin2hex(random_bytes(32));
+        $expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        
+        $sql = "UPDATE {$this->table} SET reset_token = :token, reset_expires = :expires WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $success = $stmt->execute([
+            ':token' => $token,
+            ':expires' => $expires,
+            ':id' => $userId
+        ]);
+        
+        return $success ? $token : false;
+    }
+
+    /**
+     * Busca usuario por token de recuperación
+     * @param string $token
+     * @return array|null
+     */
+    public function findByResetToken(string $token): ?array {
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE reset_token = :token 
+                AND reset_expires > NOW() 
+                AND activo = 1 
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':token' => $token]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    /**
+     * Restablece la contraseña y limpia el token
+     * @param int $userId
+     * @param string $newPassword
+     * @return bool
+     */
+    public function resetPassword(int $userId, string $newPassword): bool {
+        $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+        
+        $sql = "UPDATE {$this->table} 
+                SET password = :password, reset_token = NULL, reset_expires = NULL 
+                WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':password' => $hashedPassword,
+            ':id' => $userId
+        ]);
+    }
+
+    /**
+     * Limpia tokens expirados (puede ejecutarse periódicamente)
+     * @return int
+     */
+    public function clearExpiredTokens(): int {
+        $sql = "UPDATE {$this->table} SET reset_token = NULL, reset_expires = NULL WHERE reset_expires < NOW()";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->rowCount();
     }
 }
