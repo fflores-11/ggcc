@@ -54,7 +54,8 @@ define('UPLOADS_PATH', PUBLIC_PATH . '/uploads');
 spl_autoload_register(function ($class) {
     $paths = [
         APP_PATH . '/controllers/',
-        APP_PATH . '/models/'
+        APP_PATH . '/models/',
+        APP_PATH . '/helpers/'
     ];
 
     foreach ($paths as $path) {

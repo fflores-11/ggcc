@@ -154,9 +154,11 @@
         }
         
         .stat-card .number {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
             margin-bottom: 5px;
+            word-wrap: break-word;
+            line-height: 1.2;
         }
         
         .stat-card .label {

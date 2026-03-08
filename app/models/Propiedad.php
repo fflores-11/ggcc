@@ -62,7 +62,7 @@ class Propiedad extends Model {
                 FROM {$this->table} p 
                 LEFT JOIN comunidades c ON p.comunidad_id = c.id 
                 WHERE p.comunidad_id = :comunidad_id AND p.activo = 1 
-                ORDER BY p.id ASC";
+                ORDER BY LENGTH(p.nombre), p.nombre";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':comunidad_id' => $comunidadId]);
         return $stmt->fetchAll();
@@ -77,7 +77,7 @@ class Propiedad extends Model {
                 FROM {$this->table} p 
                 LEFT JOIN comunidades c ON p.comunidad_id = c.id 
                 WHERE p.activo = 1 
-                ORDER BY p.id ASC";
+                ORDER BY LENGTH(p.nombre), p.nombre";
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
@@ -99,7 +99,7 @@ class Propiedad extends Model {
             $params[':comunidad_id'] = $comunidadId;
         }
         
-        $sql .= " ORDER BY p.id ASC";
+        $sql .= " ORDER BY LENGTH(p.nombre), p.nombre";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -109,7 +109,7 @@ class Propiedad extends Model {
     /**
      * Obtiene el saldo actual de una propiedad
      * @param int $propiedadId
-     * @return float
+     * @return array|null
      */
     public function getSaldo(int $propiedadId): float {
         $sql = "SELECT COALESCE(saldo, 0) FROM {$this->table} WHERE id = :id";
@@ -251,7 +251,7 @@ class Propiedad extends Model {
             $params[':comunidad_id'] = $comunidadId;
         }
         
-        $sql .= " ORDER BY p.id ASC";
+        $sql .= " ORDER BY LENGTH(p.nombre), p.nombre";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

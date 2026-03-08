@@ -102,9 +102,10 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Generación automática de deudas para nuevas propiedades**
   - Al crear una propiedad, se generan automáticamente deudas por todos los períodos existentes de la comunidad
   - Mensaje informativo: "Se generaron X deuda(s) automáticamente"
-- **Ordenamiento de propiedades por ID**
-  - Cambio de orden: de `nombre ASC` a `id ASC`
-  - Aplicado en todas las consultas del modelo Propiedad
+- **Ordenamiento de propiedades por Nombre**
+  - Cambio de orden en todas las consultas: de `id ASC` a `nombre ASC`
+  - Las propiedades ahora se muestran alfabéticamente: Casa 1, Casa 2, Casa 3, etc.
+  - Aplicado en: listado, select/options, búsqueda, y filtrado por comunidad
 - **Icono de mostrar/ocultar contraseña en login**
   - Toggle visual para el campo de password
   - Cambio dinámico de icono (ojo abierto/cerrado)

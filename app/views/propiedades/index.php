@@ -49,7 +49,6 @@ require_once __DIR__ . '/../partials/header.php';
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Nombre</th>
                     <th>Tipo</th>
                     <th>Gastos Comunes</th>
@@ -65,7 +64,7 @@ require_once __DIR__ . '/../partials/header.php';
             <tbody>
                 <?php if (empty($propiedades)): ?>
                     <tr>
-                        <td colspan="<?= isset($comunidad) ? 8 : 9 ?>" class="text-center text-muted py-5">
+                        <td colspan="<?= isset($comunidad) ? 7 : 8 ?>" class="text-center text-muted py-5">
                             <i class="bi bi-house-door display-4 d-block mb-3"></i>
                             No hay propiedades registradas
                         </td>
@@ -73,7 +72,6 @@ require_once __DIR__ . '/../partials/header.php';
                 <?php else: ?>
                     <?php foreach ($propiedades as $propiedad): ?>
                         <tr>
-                            <td><?= $propiedad['id'] ?></td>
                             <td>
                                 <strong><?= e($propiedad['nombre']) ?></strong>
                             </td>

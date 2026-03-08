@@ -117,9 +117,11 @@ class ConsolidadosController {
         
         return [
             'filas' => $matriz,
-            'totales' => $totalesPorMes,
-            'gran_total_pagado' => $granTotalPagado,
-            'gran_total_pendiente' => $granTotalPendiente
+            'totales' => [
+                'totales' => $totalesPorMes,
+                'gran_total_pagado' => $granTotalPagado,
+                'gran_total_pendiente' => $granTotalPendiente
+            ]
         ];
     }
 

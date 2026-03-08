@@ -192,7 +192,9 @@ require_once __DIR__ . '/../partials/header.php';
         <!-- Gráfico de Tendencias -->
         <div class="form-section mb-4">
             <div class="section-title">Tendencias de Pagos (Últimos 6 meses)</div>
-            <canvas id="tendenciasChart" height="150"></canvas>
+            <div style="position: relative; height: 300px; max-height: 300px;">
+                <canvas id="tendenciasChart"></canvas>
+            </div>
         </div>
 
         <!-- Últimas Actividades -->
@@ -368,7 +370,8 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
             scales: {
                 y: {
                     beginAtZero: true,
