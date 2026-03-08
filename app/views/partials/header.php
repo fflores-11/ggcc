@@ -57,7 +57,7 @@
         
         .sidebar-menu a {
             display: block;
-            padding: 12px 25px;
+            padding: 4px 25px;
             color: rgba(255,255,255,0.7);
             text-decoration: none;
             transition: all 0.3s;
@@ -78,7 +78,7 @@
         }
         
         .sidebar-divider {
-            margin: 20px 25px;
+            margin: 3px 25px;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
         
@@ -237,12 +237,14 @@
         /* Logo dual mode styles - light/dark mode switching */
         .sidebar-logo {
             text-align: center;
+            position: relative;
+            min-height: 120px;
         }
         
         .sidebar-logo img {
             display: block;
             margin: 0 auto;
-            max-height: 80px;
+            max-height: 120px;
             max-width: 100%;
         }
         
@@ -250,13 +252,13 @@
         .sidebar-logo {
             text-align: center;
             position: relative;
-            min-height: 80px;
+            min-height: 120px;
         }
         
         .sidebar-logo img {
             display: block;
             margin: 0 auto;
-            max-height: 80px;
+            max-height: 120px;
             max-width: 100%;
             position: relative;
         }

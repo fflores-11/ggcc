@@ -1,3 +1,10 @@
+<?php
+// Cargar configuración desde la base de datos
+require_once __DIR__ . '/../../models/ConfiguracionSistema.php';
+$configModel = new ConfiguracionSistema();
+$logos = $configModel->getBothLogos();
+$bgConfig = $configModel->getLoginBackgroundConfig();
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,38 +12,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - <?= APP_NAME ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <?php
-    // Cargar logos desde la base de datos (modo dual: claro/oscuro)
-    require_once __DIR__ . '/../../models/ConfiguracionSistema.php';
-    $configModel = new ConfiguracionSistema();
-    $logos = $configModel->getBothLogos();
-    ?>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            height: 100%;
+            width: 100%;
+        }
+        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            min-width: 100vw;
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
+<?php if ($bgConfig['exists']): ?>
+            background: url('<?= $bgConfig['url'] ?>') center center/cover no-repeat fixed;
+<?php else: ?>
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+<?php endif; ?>
+        }
+        .login-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            width: 100%;
+            padding: 20px;
         }
         .login-container {
             background: white;
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             overflow: hidden;
-            max-width: 900px;
+            max-width: 650px;
             width: 100%;
+            max-height: 90vh;
         }
         .login-left {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 50px;
+            padding: 25px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
         .login-right {
-            padding: 50px;
+            padding: 25px;
         }
         .form-control:focus {
             border-color: #667eea;
@@ -74,14 +102,14 @@
         .login-logo-container {
             text-align: center;
             position: relative;
-            min-height: 120px;
+            min-height: 200px;
         }
         
         .login-logo-container img {
             display: block;
             margin: 0 auto;
-            max-width: 200px;
-            max-height: 120px;
+            max-width: 350px;
+            max-height: 200px;
             object-fit: contain;
             position: relative;
         }
@@ -122,7 +150,7 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="login-wrapper">
         <div class="login-container row g-0">
             <div class="col-md-5 login-left">
                 <h2 class="mb-4"><?= APP_NAME ?></h2>

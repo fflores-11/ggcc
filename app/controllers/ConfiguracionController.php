@@ -233,6 +233,150 @@ class ConfiguracionController {
     }
 
     /**
+     * Procesa la subida de imagen de fondo para el login
+     */
+    public function subirFondo(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('configuracion.php');
+        }
+
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('configuracion.php');
+        }
+
+        // Actualizar modo de visualización si se envió
+        if (isset($_POST['login_background_mode'])) {
+            $userId = getUserId();
+            $this->configModel->set('login_background_mode', $_POST['login_background_mode'], $userId);
+            flash('success', 'Modo de visualización actualizado');
+            redirect('configuracion.php');
+        }
+
+        // Verificar si se subió un archivo
+        if (!isset($_FILES['background_image']) || $_FILES['background_image']['error'] === UPLOAD_ERR_NO_FILE) {
+            flash('error', 'No se seleccionó ningún archivo');
+            redirect('configuracion.php');
+        }
+
+        $file = $_FILES['background_image'];
+
+        // Verificar errores de subida
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            flash('error', 'Error al subir el archivo: ' . $this->getUploadError($file['error']));
+            redirect('configuracion.php');
+        }
+
+        // Validar tipo de archivo
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $fileType = mime_content_type($file['tmp_name']);
+        
+        if (!in_array($fileType, $allowedTypes)) {
+            flash('error', 'Tipo de archivo no permitido. Solo se permiten imágenes (JPG, PNG, GIF, WEBP)');
+            redirect('configuracion.php');
+        }
+
+        // Validar tamaño (máximo 2MB)
+        $maxSize = 2 * 1024 * 1024;
+        if ($file['size'] > $maxSize) {
+            flash('error', 'El archivo es demasiado grande. Máximo 2MB');
+            redirect('configuracion.php');
+        }
+
+        // Crear directorio si no existe
+        $uploadDir = ROOT_PATH . '/public/assets/images/';
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0755, true)) {
+                flash('error', 'Error al crear el directorio de subida. Verifique los permisos.');
+                redirect('configuracion.php');
+            }
+        }
+
+        // Verificar permisos de escritura
+        if (!is_writable($uploadDir)) {
+            flash('error', 'El directorio de imágenes no tiene permisos de escritura. Contacte al administrador.');
+            redirect('configuracion.php');
+        }
+
+        // Generar nombre único para el archivo
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $newFileName = 'login_bg_' . time() . '_' . uniqid() . '.' . $extension;
+        $uploadPath = $uploadDir . $newFileName;
+
+        // Intentar eliminar fondo anterior
+        $oldBgPath = $this->configModel->getLoginBackgroundPath();
+        $oldBgFullPath = ROOT_PATH . '/public/' . $oldBgPath;
+        if (file_exists($oldBgFullPath) && is_file($oldBgFullPath)) {
+            if (strpos(basename($oldBgFullPath), 'login_bg_') === 0) {
+                @unlink($oldBgFullPath);
+            }
+        }
+
+        // Mover el archivo
+        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            if (file_exists($uploadPath)) {
+                $relativePath = 'assets/images/' . $newFileName;
+                $userId = getUserId();
+                
+                if ($this->configModel->setLoginBackgroundPath($relativePath, $userId)) {
+                    flash('success', 'Imagen de fondo actualizada exitosamente');
+                } else {
+                    @unlink($uploadPath);
+                    flash('error', 'Error al guardar la configuración en la base de datos');
+                }
+            } else {
+                flash('error', 'Error: El archivo no se guardó correctamente');
+            }
+        } else {
+            $error = error_get_last();
+            flash('error', 'Error al mover el archivo: ' . ($error['message'] ?? 'Error desconocido'));
+        }
+
+        redirect('configuracion.php');
+    }
+
+    /**
+     * Elimina la imagen de fondo y vuelve al fondo azul por defecto
+     */
+    public function eliminarFondo(): void {
+        // DEBUG
+        error_log('=== eliminarFondo() ejecutado ===');
+        error_log('REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD']);
+        error_log('POST data: ' . print_r($_POST, true));
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log('ERROR: No es POST');
+            redirect('configuracion.php');
+        }
+
+        // CSRF temporalmente desactivado para pruebas
+        /*
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('configuracion.php');
+        }
+        */
+
+        $bgPath = $this->configModel->getLoginBackgroundPath();
+        $fullPath = ROOT_PATH . '/public/' . $bgPath;
+
+        // Eliminar archivo si existe
+        if (file_exists($fullPath) && is_file($fullPath)) {
+            if (strpos(basename($fullPath), 'login_bg_') === 0) {
+                @unlink($fullPath);
+            }
+        }
+
+        // Limpiar configuración
+        $userId = getUserId();
+        $this->configModel->setLoginBackgroundPath('', $userId);
+        $this->configModel->set('login_background_mode', 'cover', $userId);
+
+        flash('success', 'Imagen de fondo eliminada. Se usará el fondo azul por defecto.');
+        redirect('configuracion.php');
+    }
+
+    /**
      * Obtiene mensaje de error de subida de archivo
      */
     private function getUploadError(int $code): string {

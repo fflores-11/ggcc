@@ -28,6 +28,12 @@ switch ($action) {
     case 'actualizar':
         $controller->actualizar();
         break;
+    case 'subir-fondo':
+        $controller->subirFondo();
+        break;
+    case 'eliminar-fondo':
+        $controller->eliminarFondo();
+        break;
     default:
         $controller->index();
 }

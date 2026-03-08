@@ -146,4 +146,74 @@ class ConfiguracionSistema extends Model {
             'dark_exists' => $this->logoDarkExists()
         ];
     }
+
+    /**
+     * Obtiene la ruta de la imagen de fondo del login
+     * @return string
+     */
+    public function getLoginBackgroundPath(): string {
+        $path = $this->get('login_background_image', '');
+        // Si no hay imagen configurada, usar la imagen por defecto
+        if (empty($path)) {
+            $defaultPath = 'assets/images/background-default.png';
+            if (file_exists(ROOT_PATH . '/public/' . $defaultPath)) {
+                return $defaultPath;
+            }
+        }
+        return $path;
+    }
+
+    /**
+     * Actualiza la ruta de la imagen de fondo del login
+     * @param string $path
+     * @param int|null $userId
+     * @return bool
+     */
+    public function setLoginBackgroundPath(string $path, ?int $userId = null): bool {
+        return $this->set('login_background_image', $path, $userId);
+    }
+
+    /**
+     * Verifica si existe la imagen de fondo del login
+     * @return bool
+     */
+    public function loginBackgroundExists(): bool {
+        $bgPath = $this->getLoginBackgroundPath();
+        if (empty($bgPath)) return false;
+        return file_exists(ROOT_PATH . '/public/' . $bgPath);
+    }
+
+    /**
+     * Obtiene la URL completa de la imagen de fondo del login
+     * @return string
+     */
+    public function getLoginBackgroundUrl(): string {
+        $bgPath = $this->getLoginBackgroundPath();
+        if ($this->loginBackgroundExists()) {
+            return BASE_URL_FULL . $bgPath;
+        }
+        return '';
+    }
+
+    /**
+     * Obtiene el modo de visualización del fondo (cover, contain, repeat)
+     * @return string
+     */
+    public function getLoginBackgroundMode(): string {
+        $mode = $this->get('login_background_mode', 'cover');
+        return in_array($mode, ['cover', 'contain', 'repeat']) ? $mode : 'cover';
+    }
+
+    /**
+     * Obtiene toda la configuración del fondo del login
+     * @return array
+     */
+    public function getLoginBackgroundConfig(): array {
+        return [
+            'path' => $this->getLoginBackgroundPath(),
+            'url' => $this->getLoginBackgroundUrl(),
+            'exists' => $this->loginBackgroundExists(),
+            'mode' => $this->getLoginBackgroundMode()
+        ];
+    }
 }

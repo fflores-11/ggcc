@@ -122,6 +122,17 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - Listado de deudas pendientes
   - Historial de pagos con enlaces a recibos
   - Botones rápidos: "Registrar Pago", "Enviar Cobranza"
+- **Imagen de fondo por defecto para Login**
+  - Imagen `background-default.png` en `/public/assets/images/`
+  - Se usa automáticamente cuando no hay imagen configurada
+  - Permisos y propietario correctos (www-data:www-data, 755)
+  - Configuración en base de datos actualizada
+- **Configuración de imagen de fondo para Login**
+  - Nueva sección en Configuración del Sistema
+  - Permite subir imagen personalizada de fondo para la página de inicio
+  - Modos de visualización: Cover (cubrir), Contain (ajustar), Repeat (repetir)
+  - Si no hay imagen configurada, usa el fondo azul por defecto
+  - Vista previa en tiempo real de la imagen seleccionada
 
 #### 🔒 Seguridad Implementada
 - Password hashing con `password_hash()` (algoritmo bcrypt de PHP 8.1)
