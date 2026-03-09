@@ -246,11 +246,21 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Corrección de token CSRF** - Agregado a vistas de autenticación independientes (`forgot-password.php`, `reset-password.php`)
 
 ### ✨ Nuevas Funcionalidades
-- **Eliminar Registro de Caja en Saldos Mensuales**
-  - Botón para eliminar registros históricos de caja (solo períodos abiertos)
-  - Confirmación previa con detalle del período a eliminar
-  - Protección CSRF en el formulario de eliminación
-  - No permite eliminar períodos cerrados (deben reabrirse primero)
+- **Firma Digital en Recibos PDF**
+  - Nuevo campo `firma_path` en tabla `usuarios` para almacenar ruta de firma
+  - Subida de imagen de firma desde perfil de usuario (formatos: PNG, JPG, GIF, WEBP)
+  - Validación de tamaño máximo (2MB) y dimensiones (máximo 800x400px)
+  - Visualización de firma actual con opción de eliminar
+  - Integración en generación de PDF: firma aparece sobre la línea "Firma y Sello"
+  - Uso de URL completa para compatibilidad con Dompdf
+  - Tamaño de firma optimizado: 400px de ancho x 150px de alto máximo
+  - Posicionamiento ajustado para mantener todo en una sola página
+  - Solo usuarios con rol admin o administrador pueden gestionar firmas
+  - Directorio de almacenamiento: `/public/assets/images/firmas/`
+  - Métodos en Usuario model: `getFirmaPath()`, `updateFirmaPath()`, `firmaExists()`, `getFirmaUrl()`
+  - Controlador actualizado: `UsuariosController::subirFirma()`, `UsuariosController::eliminarFirma()`
+  - Vista de formulario: sección de firma con preview y controles
+  - Rutas: `POST /usuarios/subir-firma`, `POST /usuarios/eliminar-firma`
 
 ### 📚 Documentación
 - `README.md` - Guía de instalación y uso

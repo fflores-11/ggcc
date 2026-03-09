@@ -139,6 +139,58 @@ $comunidades = $comunidadModel->getForSelect();
                 </div>
             </form>
         </div>
+        
+        <?php if ($isEdit && ($usuario['id'] == getUserId() || getUserRole() === 'admin')): ?>
+        <!-- Sección de Firma Digital -->
+        <div class="form-section mt-4">
+            <h6 class="mb-3"><i class="bi bi-pen me-2"></i>Firma Digital</h6>
+            <p class="text-muted mb-3">
+                Suba una imagen de su firma para usar en los recibos de pago. La imagen debe ser PNG o JPG con fondo transparente o blanco.
+            </p>
+            
+            <?php
+            $userModel = new Usuario();
+            $tieneFirma = $userModel->firmaExists($usuario['id']);
+            $firmaUrl = $tieneFirma ? $userModel->getFirmaUrl($usuario['id']) : '';
+            ?>
+            
+            <?php if ($tieneFirma): ?>
+                <div class="mb-3">
+                    <label class="form-label">Firma Actual:</label>
+                    <div class="border rounded p-3 text-center bg-light">
+                        <img src="<?= $firmaUrl ?>" alt="Firma actual" style="max-height: 100px; max-width: 100%;">
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <form action="usuarios.php?action=subir-firma" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+                <input type="hidden" name="user_id" value="<?= $usuario['id'] ?>">
+                
+                <div class="mb-3">
+                    <label for="firma" class="form-label"><?= $tieneFirma ? 'Cambiar Firma:' : 'Subir Firma:' ?></label>
+                    <input type="file" class="form-control" id="firma" name="firma" accept="image/png,image/jpeg,image/gif,image/webp" required>
+                    <div class="form-text">
+                        Formatos: PNG, JPG, GIF, WEBP. Máximo 2MB.
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload me-2"></i><?= $tieneFirma ? 'Actualizar Firma' : 'Subir Firma' ?>
+                    </button>
+                    
+                    <?php if ($tieneFirma): ?>
+                    <a href="usuarios.php?action=eliminar-firma&id=<?= $usuario['id'] ?>" 
+                       class="btn btn-outline-danger"
+                       onclick="return confirm('¿Está seguro de eliminar su firma?')">
+                        <i class="bi bi-trash me-2"></i>Eliminar
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </div>
+        <?php endif; ?>
     </div>
 
     <div class="col-lg-4">

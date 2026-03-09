@@ -10,7 +10,6 @@ class PagosController {
     private Propiedad $propiedadModel;
     private Comunidad $comunidadModel;
     private ConfiguracionSMTP $smtpConfigModel;
-    private Usuario $usuarioModel;
 
     public function __construct() {
         $this->pagoModel = new Pago();
@@ -18,7 +17,6 @@ class PagosController {
         $this->propiedadModel = new Propiedad();
         $this->comunidadModel = new Comunidad();
         $this->smtpConfigModel = new ConfiguracionSMTP();
-        $this->usuarioModel = new Usuario();
     }
 
     /**
@@ -246,17 +244,6 @@ class PagosController {
             $mesesPagados[] = getMonthName((int)$detalle['mes']) . ' ' . $detalle['anio'];
         }
 
-        // Cargar la firma del usuario actual
-        $userId = getUserId();
-        $firmaPath = null;
-        if ($userId) {
-            $firmaPath = $this->usuarioModel->getFirmaPath($userId);
-            // Verificar que la firma existe
-            if ($firmaPath && !file_exists(PUBLIC_PATH . '/' . $firmaPath)) {
-                $firmaPath = null;
-            }
-        }
-
         // Cargar Dompdf desde vendor
         require_once ROOT_PATH . '/vendor/autoload.php';
 
@@ -265,17 +252,11 @@ class PagosController {
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isPhpEnabled', true);
         $options->set('defaultFont', 'Arial');
-        $options->set('isRemoteEnabled', true);
-        $options->set('isFontSubsettingEnabled', true);
-        $options->set('chroot', PUBLIC_PATH);
 
         $dompdf = new \Dompdf\Dompdf($options);
 
         // Crear contenido HTML del PDF
-        $html = $this->generarHtmlPdf($pago, $mesesPagados, $firmaPath);
-        
-        // DEBUG: Guardar HTML generado para verificación
-        // file_put_contents(ROOT_PATH . '/debug_pdf.html', $html);
+        $html = $this->generarHtmlPdf($pago, $mesesPagados);
         
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
@@ -290,19 +271,10 @@ class PagosController {
     /**
      * Genera el HTML para el PDF del recibo
      */
-    private function generarHtmlPdf(array $pago, array $mesesPagados, ?string $firmaPath = null): string {
+    private function generarHtmlPdf(array $pago, array $mesesPagados): string {
         $logo = APP_NAME;
         $fecha = formatDate($pago['fecha']);
         $total = formatMoney((float)$pago['monto']);
-        
-        // Preparar firma si existe - usar URL completa para Dompdf
-        $firmaHtml = '';
-        $fullPath = $firmaPath ? PUBLIC_PATH . '/' . $firmaPath : null;
-        if ($firmaPath && file_exists($fullPath)) {
-            // Usar URL completa para que Dompdf pueda cargar la imagen
-            $firmaUrl = BASE_URL_FULL . $firmaPath;
-            $firmaHtml = "<div style='margin-top: 10px; margin-bottom: 5px;'><img src='" . $firmaUrl . "' alt='Firma' style='max-height: 150px; max-width: 400px;'></div>";
-        }
         
         $filas = '';
         foreach ($pago['detalles'] as $detalle) {
@@ -332,26 +304,26 @@ class PagosController {
             <meta charset='UTF-8'>
             <title>Recibo de Pago</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .header { text-align: center; border-bottom: 3px solid #667eea; padding-bottom: 15px; margin-bottom: 15px; }
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .header { text-align: center; border-bottom: 3px solid #667eea; padding-bottom: 20px; margin-bottom: 30px; }
                 .header h1 { color: #667eea; margin: 0; font-size: 28px; }
                 .header h2 { color: #333; margin: 10px 0 0 0; font-size: 18px; }
-                .info-box { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 5px; }
+                .info-box { background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px; }
                 .info-row { margin: 8px 0; }
                 .label { font-weight: bold; color: #555; display: inline-block; width: 120px; }
                 .value { color: #333; }
-                table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-                th { background: #667eea; color: white; padding: 8px; text-align: left; }
-                td { padding: 6px; border-bottom: 1px solid #ddd; }
-                .total { font-size: 18px; font-weight: bold; color: #667eea; text-align: right; margin-top: 10px; }
-                .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 10px; }
-                .signature { margin-top: 20px; text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th { background: #667eea; color: white; padding: 12px; text-align: left; }
+                td { padding: 10px; border-bottom: 1px solid #ddd; }
+                .total { font-size: 18px; font-weight: bold; color: #667eea; text-align: right; margin-top: 20px; }
+                .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+                .signature { margin-top: 60px; text-align: center; }
                 .signature-line { border-top: 1px solid #333; width: 200px; margin: 0 auto; padding-top: 5px; }
             </style>
         </head>
         <body>
             <div class='header'>
-                <h1>RECIBO DE PAGO</h1>
+                <h1>&#10003; RECIBO DE PAGO</h1>
                 <h2>{$pago['numero_recibo']}</h2>
                 <p style='color: #666; margin: 5px 0;'>Sistema $logo</p>
             </div>
@@ -406,7 +378,6 @@ class PagosController {
             $observaciones
 
             <div class='signature'>
-                $firmaHtml
                 <div class='signature-line'>Firma y Sello</div>
                 <p style='margin-top: 5px; color: #666;'>Administración de Gastos Comunes</p>
             </div>
@@ -456,7 +427,7 @@ class PagosController {
         <body>
             <div class='container'>
                 <div class='header'>
-<h1>RECIBO DE PAGO</h1>
+                    <h1>&#10003; RECIBO DE PAGO</h1>
                     <h2>$numeroRecibo</h2>
                 </div>
                 

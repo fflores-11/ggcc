@@ -38,4 +38,12 @@ switch ($action) {
     case 'restore':
         $controller->restore();
         break;
+        
+    case 'subir-firma':
+        $controller->subirFirma();
+        break;
+        
+    case 'eliminar-firma':
+        $controller->eliminarFirma();
+        break;
 }

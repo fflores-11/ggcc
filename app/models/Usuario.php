@@ -231,6 +231,61 @@ class Usuario extends Model {
     }
 
     /**
+     * Obtiene la ruta de la firma del usuario
+     * @param int $userId
+     * @return string|null
+     */
+    public function getFirmaPath(int $userId): ?string {
+        $sql = "SELECT firma_path FROM {$this->table} WHERE id = :id LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $userId]);
+        $result = $stmt->fetchColumn();
+        
+        // Asegurar que retornamos null si no hay valor
+        if ($result === false || $result === null || $result === '') {
+            return null;
+        }
+        
+        return (string) $result;
+    }
+
+    /**
+     * Actualiza la ruta de la firma del usuario
+     * @param int $userId
+     * @param string $path
+     * @return bool
+     */
+    public function updateFirmaPath(int $userId, string $path): bool {
+        $sql = "UPDATE {$this->table} SET firma_path = :path WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':path' => $path, ':id' => $userId]);
+    }
+
+    /**
+     * Verifica si existe la imagen de firma del usuario
+     * @param int $userId
+     * @return bool
+     */
+    public function firmaExists(int $userId): bool {
+        $path = $this->getFirmaPath($userId);
+        if (!$path) return false;
+        return file_exists(ROOT_PATH . '/public/' . $path);
+    }
+
+    /**
+     * Obtiene la URL completa de la firma del usuario
+     * @param int $userId
+     * @return string
+     */
+    public function getFirmaUrl(int $userId): string {
+        $path = $this->getFirmaPath($userId);
+        if ($this->firmaExists($userId)) {
+            return BASE_URL_FULL . $path;
+        }
+        return '';
+    }
+
+    /**
      * Busca usuario por email
      * @param string $email
      * @return array|null

@@ -219,4 +219,163 @@ class UsuariosController {
         
         redirect('usuarios.php');
     }
+
+    /**
+     * Procesa la subida de imagen de firma del usuario
+     */
+    public function subirFirma(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('usuarios.php');
+        }
+
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('usuarios.php');
+        }
+
+        $userId = (int) ($_POST['user_id'] ?? 0);
+        
+        if (!$userId) {
+            flash('error', 'ID de usuario no válido');
+            redirect('usuarios.php');
+        }
+
+        // Verificar que el usuario existe
+        $usuario = $this->userModel->find($userId);
+        if (!$usuario) {
+            flash('error', 'Usuario no encontrado');
+            redirect('usuarios.php');
+        }
+
+        // Verificar permisos: solo puede subir firma el mismo usuario o un admin
+        $currentUserId = getUserId();
+        $currentUserRole = getUserRole();
+        
+        if ($currentUserId !== $userId && $currentUserRole !== 'admin') {
+            flash('error', 'No tiene permisos para subir firma de este usuario');
+            redirect('usuarios.php');
+        }
+
+        // Verificar si se subió un archivo
+        if (!isset($_FILES['firma']) || $_FILES['firma']['error'] === UPLOAD_ERR_NO_FILE) {
+            flash('error', 'No se seleccionó ningún archivo');
+            redirect('usuarios.php?action=edit&id=' . $userId);
+        }
+
+        $file = $_FILES['firma'];
+
+        // Verificar errores de subida
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            flash('error', 'Error al subir el archivo: ' . $this->getUploadError($file['error']));
+            redirect('usuarios.php?action=edit&id=' . $userId);
+        }
+
+        // Validar tipo de archivo (solo imágenes)
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $fileType = mime_content_type($file['tmp_name']);
+        
+        if (!in_array($fileType, $allowedTypes)) {
+            flash('error', 'Tipo de archivo no permitido. Solo se permiten imágenes (JPG, PNG, GIF, WEBP)');
+            redirect('usuarios.php?action=edit&id=' . $userId);
+        }
+
+        // Validar tamaño (máximo 2MB)
+        $maxSize = 2 * 1024 * 1024;
+        if ($file['size'] > $maxSize) {
+            flash('error', 'El archivo es demasiado grande. Máximo 2MB');
+            redirect('usuarios.php?action=edit&id=' . $userId);
+        }
+
+        // Crear directorio si no existe
+        $uploadDir = ROOT_PATH . '/public/assets/images/firmas/';
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0755, true)) {
+                flash('error', 'Error al crear el directorio de firmas');
+                redirect('usuarios.php?action=edit&id=' . $userId);
+            }
+        }
+
+        // Generar nombre único
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $newFileName = 'firma_' . $userId . '_' . time() . '.' . $extension;
+        $uploadPath = $uploadDir . $newFileName;
+
+        // Eliminar firma anterior si existe
+        $oldFirmaPath = $this->userModel->getFirmaPath($userId);
+        if ($oldFirmaPath) {
+            $oldFullPath = ROOT_PATH . '/public/' . $oldFirmaPath;
+            if (file_exists($oldFullPath) && strpos(basename($oldFullPath), 'firma_') === 0) {
+                @unlink($oldFullPath);
+            }
+        }
+
+        // Mover el archivo
+        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            $relativePath = 'assets/images/firmas/' . $newFileName;
+            
+            if ($this->userModel->updateFirmaPath($userId, $relativePath)) {
+                flash('success', 'Firma subida exitosamente');
+            } else {
+                @unlink($uploadPath);
+                flash('error', 'Error al guardar la firma en la base de datos');
+            }
+        } else {
+            flash('error', 'Error al mover el archivo de firma');
+        }
+
+        redirect('usuarios.php?action=edit&id=' . $userId);
+    }
+
+    /**
+     * Elimina la firma del usuario
+     */
+    public function eliminarFirma(): void {
+        $userId = (int) ($_GET['id'] ?? 0);
+        
+        if (!$userId) {
+            flash('error', 'ID de usuario no válido');
+            redirect('usuarios.php');
+        }
+
+        // Verificar permisos
+        $currentUserId = getUserId();
+        $currentUserRole = getUserRole();
+        
+        if ($currentUserId !== $userId && $currentUserRole !== 'admin') {
+            flash('error', 'No tiene permisos para eliminar la firma de este usuario');
+            redirect('usuarios.php');
+        }
+
+        $firmaPath = $this->userModel->getFirmaPath($userId);
+        
+        if ($firmaPath) {
+            $fullPath = ROOT_PATH . '/public/' . $firmaPath;
+            if (file_exists($fullPath)) {
+                @unlink($fullPath);
+            }
+            
+            $this->userModel->updateFirmaPath($userId, '');
+            flash('success', 'Firma eliminada exitosamente');
+        } else {
+            flash('warning', 'No hay firma para eliminar');
+        }
+
+        redirect('usuarios.php?action=edit&id=' . $userId);
+    }
+
+    /**
+     * Obtiene mensaje de error de subida
+     */
+    private function getUploadError(int $code): string {
+        $errors = [
+            UPLOAD_ERR_INI_SIZE => 'El archivo excede el tamaño máximo permitido por el servidor',
+            UPLOAD_ERR_FORM_SIZE => 'El archivo excede el tamaño máximo del formulario',
+            UPLOAD_ERR_PARTIAL => 'El archivo se subió parcialmente',
+            UPLOAD_ERR_NO_FILE => 'No se subió ningún archivo',
+            UPLOAD_ERR_NO_TMP_DIR => 'Falta la carpeta temporal',
+            UPLOAD_ERR_CANT_WRITE => 'Error al escribir el archivo en el disco',
+            UPLOAD_ERR_EXTENSION => 'Una extensión de PHP detuvo la subida'
+        ];
+        return $errors[$code] ?? 'Error desconocido';
+    }
 }
