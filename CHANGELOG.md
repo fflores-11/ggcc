@@ -4,6 +4,61 @@ Todos los cambios notables en el proyecto Sistema de Gestión de Gastos Comunes 
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [Unreleased] - 2026-03-15
+
+### ✨ Nuevas Funcionalidades
+
+#### Gestión de Mascotas
+- **Nuevo módulo de mascotas para propiedades**
+  - Campos: Nombre, Tipo (Gato/Perro/Ave/Hamster), Edad, Alimento, Imagen
+  - Una propiedad puede tener múltiples mascotas
+  - Imágenes de 200x200 píxeles con formato JPG, PNG, GIF (máx 2MB)
+  - CRUD completo: Agregar, editar, eliminar mascotas
+  - Visualización en tarjetas con foto y datos de la mascota
+  - Cambio de imagen al editar (reemplaza la anterior automáticamente)
+
+- **Acceso multi-rol:**
+  - **Propietarios**: Pueden gestionar mascotas desde "Mi Perfil"
+  - **Admin/Super-admin**: Pueden gestionar mascotas desde el detalle de cualquier propiedad
+
+- **Base de datos - Nueva tabla `mascotas`:**
+  - `id`, `propiedad_id`, `nombre`, `tipo` (ENUM), `edad`, `alimento`, `imagen_path`
+  - Soft delete con campo `activo`
+  - Índices optimizados por propiedad y tipo
+
+#### Mejoras en Usuarios de Propiedad
+- **Email opcional en creación de usuarios propietarios**
+  - Campo de email ya no es obligatorio al crear usuarios de propiedad
+  - Validación condicional: solo valida formato si se proporciona email
+  - Aplicado en: creación, edición por admin, y edición de perfil por propietario
+
+- **Propietarios pueden editar datos de su propiedad**
+  - Nueva sección "Editar Datos de la Propiedad" en el perfil del propietario
+  - Campos editables: Nombre del dueño, Email del dueño, WhatsApp del dueño
+  - Campos editables: Nombre del agente, Email del agente, WhatsApp del agente
+  - Campos bloqueados (solo admin): Nombre de propiedad, Comunidad, Gastos comunes
+  - Mensaje informativo indicando campos no editables
+
+#### Vistas Actualizadas
+- `app/views/usuarios_propiedad/perfil.php`: Nueva sección de mascotas y edición de propiedad
+- `app/views/propiedades/show.php`: Nueva sección de mascotas para administradores
+- `app/views/usuarios_propiedad/form.php`: Email sin asterisco de obligatorio
+
+#### Archivos Creados/Modificados
+**Nuevos archivos:**
+- `app/models/Mascota.php`: Modelo completo CRUD para mascotas
+- `config/migration_mascotas.sql`: Migración de base de datos
+
+**Archivos modificados:**
+- `app/controllers/UsuariosPropiedadController.php`: Métodos CRUD para mascotas y actualización de propiedad
+- `app/controllers/PropiedadesController.php`: Gestión de mascotas para admins
+- `app/models/Usuario.php`: Campos de agente agregados a consultas
+- `app/models/Propiedad.php`: Método `updateByPropietario()` para campos permitidos
+- `public/perfil.php`: Nuevas rutas para mascotas
+- `public/propiedades.php`: Nuevas rutas para gestión de mascotas por admin
+
+---
+
 ## [1.1.0] - 2026-03-15
 
 ### 🎉 Sistema de Usuarios por Propiedad - Implementación Completa
@@ -306,11 +361,11 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - Deudas generadas para los últimos 6 meses
 
 #### 📊 Estadísticas del Proyecto
-- **Total de archivos PHP:** 51
-- **Total de líneas de código:** ~7,707
-- **Directorios:** 21
-- **Tokens estimados:** ~70,000
-- **Módulos implementados:** 9 (Auth, Usuarios, Comunidades, Propiedades, Pagos, Correos, Dashboard, Consolidados, Reportes)
+- **Total de archivos PHP:** 53
+- **Total de líneas de código:** ~8,500
+- **Directorios:** 22
+- **Tokens estimados:** ~80,000
+- **Módulos implementados:** 10 (Auth, Usuarios, Comunidades, Propiedades, Pagos, Correos, Dashboard, Consolidados, Reportes, Mascotas)
 
 #### 🛠️ Stack Tecnológico
 - **Backend:** PHP 8.1
@@ -335,7 +390,8 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 ├── config/              # Configuración DB, autoload, utilidades
 ├── public/              # Punto de entrada + assets
 │   └── assets/
-│       ├── images/      # Logos e imágenes de fondo
+│       ├── images/      # Logos, imágenes de fondo y mascotas
+│       │   └── mascotas/# Imágenes de mascotas (200x200px)
 │       └── js/          # Scripts JavaScript
 │           └── form-loading.js  # Anti-doble-submit (nuevo)
 ├── vendor/              # Librerías Composer (Dompdf, etc.)
@@ -375,6 +431,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ### 🚀 Próximas Mejoras (Roadmap)
 - [x] **Generación de PDFs** - ✅ Implementado con Dompdf v3.1.5 (6 Mar 2026)
+- [x] **Sistema de Mascotas** - ✅ Implementado (15 Mar 2026)
 - [ ] Instalación de SwiftMailer para envío real de correos
 - [ ] Exportación real a Excel (implementación con librerías)
 - [ ] Sistema de notificaciones en tiempo real
@@ -388,6 +445,16 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 ---
 
 ## Notas de Versión
+
+### Versión [Unreleased]
+- **Fecha:** 15 de Marzo de 2026
+- **Estado:** En desarrollo
+- **Nuevas funcionalidades principales:**
+  - ✅ Módulo de Mascotas completo (CRUD + imágenes)
+  - ✅ Email opcional para usuarios de propiedad
+  - ✅ Propietarios pueden editar datos de su propiedad
+- **Desarrollado por:** Claude Code (Anthropic)
+- **Tiempo de desarrollo:** ~1 hora de trabajo continuo
 
 ### Versión 1.1.0
 - **Fecha de lanzamiento:** 15 de Marzo de 2026
@@ -415,4 +482,4 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 Para reportar bugs o solicitar nuevas funcionalidades, contacte al administrador del sistema.
 
-**Sistema GGCC v1.1.0** - Sistema de Administración de Gastos Comunes de Condominios
+**Sistema GGCC v1.2.0-dev** - Sistema de Administración de Gastos Comunes de Condominios

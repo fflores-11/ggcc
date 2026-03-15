@@ -114,6 +114,179 @@ $saldoDisponible = $propiedad['saldo'] ?? 0;
                 </a>
             </div>
         </div>
+
+        <!-- Mascotas -->
+        <div class="form-section mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="section-title mb-0">Mascotas</h6>
+                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarMascotaAdmin">
+                    <i class="bi bi-plus-circle me-1"></i>Agregar
+                </button>
+            </div>
+            
+            <?php if (empty($mascotas)): ?>
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-heart display-5 mb-2"></i>
+                    <p class="small mb-0">No hay mascotas registradas</p>
+                </div>
+            <?php else: ?>
+                <div class="list-group">
+                    <?php foreach ($mascotas as $mascota): ?>
+                        <div class="list-group-item list-group-item-action p-2">
+                            <div class="d-flex align-items-center">
+                                <?php if (!empty($mascota['imagen_path'])): ?>
+                                     <img src="<?= BASE_URL_FULL . $mascota['imagen_path'] ?>" 
+                                         alt="<?= e($mascota['nombre']) ?>" 
+                                         class="rounded me-2" style="width: 200px; height: 200px; object-fit: cover;">
+                                <?php else: ?>
+                                    <div class="rounded bg-light d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 200px; height: 200px;">
+                                         <i class="bi bi-heart text-muted fs-1"></i>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-0"><?= e($mascota['nombre']) ?></h6>
+                                            <small class="text-muted">
+                                                <?= $mascota['tipo'] ?> • <?= $mascota['edad'] ?> años
+                                                <?php if (!empty($mascota['alimento'])): ?>
+                                                    • <?= e($mascota['alimento']) ?>
+                                                <?php endif; ?>
+                                            </small>
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalEditarMascotaAdmin<?= $mascota['id'] ?>">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <a href="propiedades.php?action=eliminarMascota&id=<?= $mascota['id'] ?>&propiedad_id=<?= $propiedad['id'] ?>" 
+                                               class="btn btn-outline-danger"
+                                               onclick="return confirm('¿Eliminar esta mascota?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal Editar Mascota Admin -->
+                        <div class="modal fade" id="modalEditarMascotaAdmin<?= $mascota['id'] ?>" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Editar Mascota</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="propiedades.php?action=actualizarMascota" enctype="multipart/form-data">
+                                        <div class="modal-body">
+                                            <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+                                            <input type="hidden" name="mascota_id" value="<?= $mascota['id'] ?>">
+                                            <input type="hidden" name="propiedad_id" value="<?= $propiedad['id'] ?>">
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="nombre" 
+                                                       value="<?= e($mascota['nombre']) ?>" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                                                <select class="form-select" name="tipo" required>
+                                                    <option value="Gato" <?= $mascota['tipo'] === 'Gato' ? 'selected' : '' ?>>Gato</option>
+                                                    <option value="Perro" <?= $mascota['tipo'] === 'Perro' ? 'selected' : '' ?>>Perro</option>
+                                                    <option value="Ave" <?= $mascota['tipo'] === 'Ave' ? 'selected' : '' ?>>Ave</option>
+                                                    <option value="Hamster" <?= $mascota['tipo'] === 'Hamster' ? 'selected' : '' ?>>Hamster</option>
+                                                </select>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Edad (años)</label>
+                                                    <input type="number" class="form-control" name="edad" min="0" 
+                                                           value="<?= $mascota['edad'] ?>">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Alimento</label>
+                                                    <input type="text" class="form-control" name="alimento" 
+                                                           value="<?= e($mascota['alimento'] ?? '') ?>">
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Cambiar Imagen</label>
+                                                <input type="file" class="form-control" name="imagen" accept="image/*">
+                                                <?php if (!empty($mascota['imagen_path'])): ?>
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">Actual:</small>
+                                                        <img src="<?= BASE_URL_FULL . $mascota['imagen_path'] ?>" 
+                                                             class="rounded ms-2" style="max-width: 100px; max-height: 100px; object-fit: cover;">
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">Guardar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Modal Agregar Mascota Admin -->
+        <div class="modal fade" id="modalAgregarMascotaAdmin" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Agregar Mascota</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="propiedades.php?action=agregarMascota" enctype="multipart/form-data">
+                        <div class="modal-body">
+                            <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+                            <input type="hidden" name="propiedad_id" value="<?= $propiedad['id'] ?>">
+
+                            <div class="mb-3">
+                                <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="nombre" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                                <select class="form-select" name="tipo" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Gato">Gato</option>
+                                    <option value="Perro">Perro</option>
+                                    <option value="Ave">Ave</option>
+                                    <option value="Hamster">Hamster</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Edad (años)</label>
+                                    <input type="number" class="form-control" name="edad" min="0">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Alimento</label>
+                                    <input type="text" class="form-control" name="alimento">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Imagen</label>
+                                <input type="file" class="form-control" name="imagen" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success">Agregar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Deudas Pendientes -->

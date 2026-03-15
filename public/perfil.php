@@ -14,7 +14,8 @@ $action = $_GET['action'] ?? 'perfil';
 
 // Rutas disponibles
 $validActions = [
-    'perfil', 'updatePerfil', 'updatePropiedad'
+    'perfil', 'updatePerfil', 'updatePropiedad', 
+    'agregarMascota', 'actualizarMascota', 'eliminarMascota'
 ];
 
 if (in_array($action, $validActions)) {

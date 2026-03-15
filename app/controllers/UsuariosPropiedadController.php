@@ -12,12 +12,14 @@ class UsuariosPropiedadController {
     private Usuario $userModel;
     private Propiedad $propiedadModel;
     private Comunidad $comunidadModel;
+    private Mascota $mascotaModel;
     private PDO $db;
 
     public function __construct() {
         $this->userModel = new Usuario();
         $this->propiedadModel = new Propiedad();
         $this->comunidadModel = new Comunidad();
+        $this->mascotaModel = new Mascota();
         $this->db = getDB();
     }
 
@@ -509,6 +511,12 @@ class UsuariosPropiedadController {
             redirect('dashboard.php');
         }
 
+        // Obtener mascotas de la propiedad
+        $mascotas = [];
+        if (!empty($usuario['propiedad_id'])) {
+            $mascotas = $this->mascotaModel->getByPropiedad($usuario['propiedad_id']);
+        }
+
         $title = 'Mi Perfil';
         require_once VIEWS_PATH . '/usuarios_propiedad/perfil.php';
     }
@@ -662,5 +670,219 @@ class UsuariosPropiedadController {
         }
         
         redirect('perfil.php');
+    }
+
+    /**
+     * Agrega una nueva mascota a la propiedad del propietario logueado
+     */
+    public function agregarMascota(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('perfil.php');
+        }
+
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('perfil.php');
+        }
+
+        // Solo propietarios pueden agregar mascotas
+        if (getUserRole() !== 'propietario') {
+            flash('error', 'No tiene permisos para esta acción');
+            redirect('dashboard.php');
+        }
+
+        $userId = getUserId();
+        $propiedadId = getUserPropiedadId();
+        
+        if (!$propiedadId) {
+            flash('error', 'No tiene una propiedad asignada');
+            redirect('perfil.php');
+        }
+
+        // Verificar que el usuario tenga acceso a esta propiedad
+        if (!$this->userModel->hasAccessToPropiedad($userId, $propiedadId)) {
+            flash('error', 'No tiene permisos para agregar mascotas a esta propiedad');
+            redirect('perfil.php');
+        }
+
+        $data = [
+            'propiedad_id' => $propiedadId,
+            'nombre' => trim($_POST['nombre'] ?? ''),
+            'tipo' => trim($_POST['tipo'] ?? ''),
+            'edad' => !empty($_POST['edad']) ? (int)$_POST['edad'] : 0,
+            'alimento' => trim($_POST['alimento'] ?? '')
+        ];
+
+        // Validar datos
+        $validation = $this->mascotaModel->validate($data);
+        if (!$validation['valid']) {
+            flash('error', implode('<br>', $validation['errors']));
+            redirect('perfil.php');
+        }
+
+        // Procesar imagen si se subió
+        $imagenPath = $this->procesarImagenMascota($_FILES['imagen'] ?? null);
+        if ($imagenPath !== false) {
+            $data['imagen_path'] = $imagenPath;
+        }
+
+        $mascotaId = $this->mascotaModel->create($data);
+        
+        if ($mascotaId) {
+            flash('success', 'Mascota agregada exitosamente');
+        } else {
+            flash('error', 'Error al agregar la mascota');
+        }
+        
+        redirect('perfil.php');
+    }
+
+    /**
+     * Actualiza una mascota existente
+     */
+    public function actualizarMascota(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('perfil.php');
+        }
+
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('perfil.php');
+        }
+
+        // Solo propietarios pueden actualizar mascotas
+        if (getUserRole() !== 'propietario') {
+            flash('error', 'No tiene permisos para esta acción');
+            redirect('dashboard.php');
+        }
+
+        $mascotaId = (int)($_POST['mascota_id'] ?? 0);
+        if (!$mascotaId) {
+            flash('error', 'ID de mascota no válido');
+            redirect('perfil.php');
+        }
+
+        // Verificar que la mascota pertenezca a la propiedad del usuario
+        $mascota = $this->mascotaModel->getWithPropiedad($mascotaId);
+        if (!$mascota || $mascota['propiedad_id'] !== getUserPropiedadId()) {
+            flash('error', 'No tiene permisos para editar esta mascota');
+            redirect('perfil.php');
+        }
+
+        $data = [
+            'nombre' => trim($_POST['nombre'] ?? ''),
+            'tipo' => trim($_POST['tipo'] ?? ''),
+            'edad' => !empty($_POST['edad']) ? (int)$_POST['edad'] : 0,
+            'alimento' => trim($_POST['alimento'] ?? '')
+        ];
+
+        // Validar datos
+        $validation = $this->mascotaModel->validate($data);
+        if (!$validation['valid']) {
+            flash('error', implode('<br>', $validation['errors']));
+            redirect('perfil.php');
+        }
+
+        // Procesar imagen si se subió una nueva
+        if (isset($_FILES['imagen']) && $_FILES['imagen']['size'] > 0) {
+            // Eliminar imagen anterior
+            $this->mascotaModel->deleteImagen($mascotaId);
+            
+            $imagenPath = $this->procesarImagenMascota($_FILES['imagen']);
+            if ($imagenPath !== false) {
+                $data['imagen_path'] = $imagenPath;
+            }
+        }
+
+        $success = $this->mascotaModel->update($mascotaId, $data);
+        
+        if ($success) {
+            flash('success', 'Mascota actualizada exitosamente');
+        } else {
+            flash('error', 'Error al actualizar la mascota');
+        }
+        
+        redirect('perfil.php');
+    }
+
+    /**
+     * Elimina (desactiva) una mascota
+     */
+    public function eliminarMascota(): void {
+        $mascotaId = (int)($_GET['id'] ?? 0);
+        
+        if (!$mascotaId) {
+            flash('error', 'ID de mascota no válido');
+            redirect('perfil.php');
+        }
+
+        // Solo propietarios pueden eliminar mascotas
+        if (getUserRole() !== 'propietario') {
+            flash('error', 'No tiene permisos para esta acción');
+            redirect('dashboard.php');
+        }
+
+        // Verificar que la mascota pertenezca a la propiedad del usuario
+        $mascota = $this->mascotaModel->getWithPropiedad($mascotaId);
+        if (!$mascota || $mascota['propiedad_id'] !== getUserPropiedadId()) {
+            flash('error', 'No tiene permisos para eliminar esta mascota');
+            redirect('perfil.php');
+        }
+
+        // Eliminar imagen física
+        $this->mascotaModel->deleteImagen($mascotaId);
+
+        $success = $this->mascotaModel->delete($mascotaId);
+        
+        if ($success) {
+            flash('success', 'Mascota eliminada exitosamente');
+        } else {
+            flash('error', 'Error al eliminar la mascota');
+        }
+        
+        redirect('perfil.php');
+    }
+
+    /**
+     * Procesa la imagen de una mascota
+     * @param array|null $file
+     * @return string|false
+     */
+    private function procesarImagenMascota(?array $file): string|false {
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+            return false;
+        }
+
+        // Validar tipo de archivo
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            flash('error', 'Tipo de archivo no permitido: ' . $file['type'] . '. Use JPEG, PNG o GIF.');
+            return false;
+        }
+
+        // Validar tamaño (máximo 5MB)
+        $maxSize = 5 * 1024 * 1024;
+        if ($file['size'] > $maxSize) {
+            flash('error', 'La imagen no debe superar los 5MB');
+            return false;
+        }
+
+        // Crear directorio si no existe
+        $uploadDir = PUBLIC_PATH . '/assets/images/mascotas/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Generar nombre único
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'mascota_' . time() . '_' . uniqid() . '.' . $extension;
+        $filepath = $uploadDir . $filename;
+
+        // Mover archivo
+        if (move_uploaded_file($file['tmp_name'], $filepath)) {
+            return 'assets/images/mascotas/' . $filename;
+        }
+
+        return false;
     }
 }

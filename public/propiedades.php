@@ -46,4 +46,16 @@ switch ($action) {
     case 'api-list':
         $controller->apiListByComunidad();
         break;
+        
+    case 'agregarMascota':
+        $controller->agregarMascota();
+        break;
+        
+    case 'actualizarMascota':
+        $controller->actualizarMascota();
+        break;
+        
+    case 'eliminarMascota':
+        $controller->eliminarMascota();
+        break;
 }
