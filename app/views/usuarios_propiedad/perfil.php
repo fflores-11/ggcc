@@ -115,10 +115,10 @@ require_once VIEWS_PATH . '/partials/header.php';
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?php echo htmlspecialchars($usuario['email']); ?>" required>
-                                <div class="invalid-feedback">Ingrese un email válido</div>
+                                       value="<?php echo htmlspecialchars($usuario['email']); ?>">
+                                <div class="form-text">Campo opcional</div>
                             </div>
 
                             <div class="col-md-6">
@@ -161,6 +161,95 @@ require_once VIEWS_PATH . '/partials/header.php';
                             </a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle me-1"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Formulario de edición de propiedad -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-house-gear me-1"></i>Editar Datos de la Propiedad
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="<?php echo BASE_URL; ?>perfil.php?action=updatePropiedad" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+
+                        <h6 class="fw-bold mb-3 text-muted">Información del Dueño</h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nombre_dueno" class="form-label">Nombre del Dueño <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nombre_dueno" name="nombre_dueno" 
+                                       value="<?php echo htmlspecialchars($usuario['nombre_dueno']); ?>" required>
+                                <div class="invalid-feedback">El nombre del dueño es obligatorio</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="email_dueno" class="form-label">Email del Dueño</label>
+                                <input type="email" class="form-control" id="email_dueno" name="email_dueno" 
+                                       value="<?php echo htmlspecialchars($usuario['email_dueno']); ?>">
+                                <div class="form-text">Campo opcional</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="whatsapp_dueno" class="form-label">WhatsApp del Dueño</label>
+                                <input type="text" class="form-control" id="whatsapp_dueno" name="whatsapp_dueno" 
+                                       value="<?php echo htmlspecialchars($usuario['whatsapp_dueno'] ?? ''); ?>"
+                                       placeholder="+56912345678">
+                                <div class="form-text">Formato: +569XXXXXXXX</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="fw-bold mb-3 text-muted">Información del Agente (Opcional)</h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nombre_agente" class="form-label">Nombre del Agente</label>
+                                <input type="text" class="form-control" id="nombre_agente" name="nombre_agente" 
+                                       value="<?php echo htmlspecialchars($usuario['nombre_agente'] ?? ''); ?>">
+                                <div class="form-text">Campo opcional</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="email_agente" class="form-label">Email del Agente</label>
+                                <input type="email" class="form-control" id="email_agente" name="email_agente" 
+                                       value="<?php echo htmlspecialchars($usuario['email_agente'] ?? ''); ?>">
+                                <div class="form-text">Campo opcional</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="whatsapp_agente" class="form-label">WhatsApp del Agente</label>
+                                <input type="text" class="form-control" id="whatsapp_agente" name="whatsapp_agente" 
+                                       value="<?php echo htmlspecialchars($usuario['whatsapp_agente'] ?? ''); ?>"
+                                       placeholder="+56912345678">
+                                <div class="form-text">Formato: +569XXXXXXXX</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Nota:</strong> No puede editar el nombre de la propiedad, la comunidad ni el monto de gastos comunes. 
+                            Para modificar estos datos, contacte a la administración.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="<?php echo BASE_URL; ?>dashboard.php" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>Guardar Cambios de Propiedad
                             </button>
                         </div>
                     </form>

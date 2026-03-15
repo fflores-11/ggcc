@@ -313,4 +313,31 @@ class Propiedad extends Model {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    /**
+     * Actualiza datos de propiedad por propietario (campos permitidos)
+     * @param int $propiedadId
+     * @param array $data
+     * @return bool
+     */
+    public function updateByPropietario(int $propiedadId, array $data): bool {
+        // Solo permitir ciertos campos
+        $allowedFields = [
+            'nombre_dueno', 'email_dueno', 'whatsapp_dueno',
+            'nombre_agente', 'email_agente', 'whatsapp_agente'
+        ];
+        
+        $updateData = [];
+        foreach ($allowedFields as $field) {
+            if (isset($data[$field])) {
+                $updateData[$field] = $data[$field];
+            }
+        }
+        
+        if (empty($updateData)) {
+            return true;
+        }
+        
+        return $this->update($propiedadId, $updateData);
+    }
 }

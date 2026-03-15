@@ -439,7 +439,8 @@ class Usuario extends Model {
     public function getUsuarioPropietario(int $userId): ?array {
         $sql = "SELECT u.*, p.nombre as propiedad_nombre, p.nombre_dueno, 
                        p.email_dueno, p.whatsapp_dueno, p.tipo as propiedad_tipo,
-                       p.precio_gastos_comunes, c.nombre as comunidad_nombre,
+                       p.precio_gastos_comunes, p.nombre_agente, p.email_agente, 
+                       p.whatsapp_agente, c.nombre as comunidad_nombre,
                        c.direccion as comunidad_direccion, c.nombre_presidente,
                        c.whatsapp_presidente, c.email_presidente
                 FROM {$this->table} u

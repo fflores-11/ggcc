@@ -123,12 +123,13 @@ class UsuariosPropiedadController {
             $errors[] = 'El nombre de usuario es obligatorio';
         }
 
-        if (empty($data['email'])) {
-            $errors[] = 'El email es obligatorio';
-        } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'El email no es válido';
-        } elseif ($this->userModel->emailExists($data['email'])) {
-            $errors[] = 'El email ya está registrado';
+        // Validar email solo si se proporciona
+        if (!empty($data['email'])) {
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = 'El email no es válido';
+            } elseif ($this->userModel->emailExists($data['email'])) {
+                $errors[] = 'El email ya está registrado';
+            }
         }
 
         if (empty($data['password'])) {
@@ -267,15 +268,15 @@ class UsuariosPropiedadController {
             'whatsapp' => trim($_POST['whatsapp'] ?? '')
         ];
 
-        // Validar email
+        // Validar email solo si se proporciona
         $errors = [];
         
-        if (empty($data['email'])) {
-            $errors[] = 'El email es obligatorio';
-        } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'El email no es válido';
-        } elseif ($this->userModel->emailExists($data['email'], $id)) {
-            $errors[] = 'El email ya está registrado por otro usuario';
+        if (!empty($data['email'])) {
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = 'El email no es válido';
+            } elseif ($this->userModel->emailExists($data['email'], $id)) {
+                $errors[] = 'El email ya está registrado por otro usuario';
+            }
         }
 
         // Si hay password, agregarlo
@@ -538,15 +539,15 @@ class UsuariosPropiedadController {
             'whatsapp' => trim($_POST['whatsapp'] ?? '')
         ];
 
-        // Validar email
+        // Validar email solo si se proporciona
         $errors = [];
         
-        if (empty($data['email'])) {
-            $errors[] = 'El email es obligatorio';
-        } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'El email no es válido';
-        } elseif ($this->userModel->emailExists($data['email'], $userId)) {
-            $errors[] = 'El email ya está registrado por otro usuario';
+        if (!empty($data['email'])) {
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = 'El email no es válido';
+            } elseif ($this->userModel->emailExists($data['email'], $userId)) {
+                $errors[] = 'El email ya está registrado por otro usuario';
+            }
         }
 
         // Si hay password actual y nuevo password
@@ -585,6 +586,79 @@ class UsuariosPropiedadController {
             flash('success', 'Perfil actualizado exitosamente');
         } else {
             flash('error', 'Error al actualizar su perfil');
+        }
+        
+        redirect('perfil.php');
+    }
+
+    /**
+     * Actualiza los datos de la propiedad por el propietario logueado
+     */
+    public function updatePropiedad(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('perfil.php');
+        }
+
+        if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+            flash('error', 'Token de seguridad inválido');
+            redirect('perfil.php');
+        }
+
+        // Solo propietarios pueden actualizar su propiedad
+        if (getUserRole() !== 'propietario') {
+            flash('error', 'No tiene permisos para esta acción');
+            redirect('dashboard.php');
+        }
+
+        $userId = getUserId();
+        $propiedadId = getUserPropiedadId();
+        
+        if (!$propiedadId) {
+            flash('error', 'No tiene una propiedad asignada');
+            redirect('perfil.php');
+        }
+
+        // Verificar que el usuario tenga acceso a esta propiedad
+        if (!$this->userModel->hasAccessToPropiedad($userId, $propiedadId)) {
+            flash('error', 'No tiene permisos para editar esta propiedad');
+            redirect('perfil.php');
+        }
+
+        $data = [
+            'nombre_dueno' => trim($_POST['nombre_dueno'] ?? ''),
+            'email_dueno' => trim($_POST['email_dueno'] ?? ''),
+            'whatsapp_dueno' => trim($_POST['whatsapp_dueno'] ?? ''),
+            'nombre_agente' => trim($_POST['nombre_agente'] ?? ''),
+            'email_agente' => trim($_POST['email_agente'] ?? ''),
+            'whatsapp_agente' => trim($_POST['whatsapp_agente'] ?? '')
+        ];
+
+        // Validaciones
+        $errors = [];
+
+        if (empty($data['nombre_dueno'])) {
+            $errors[] = 'El nombre del dueño es obligatorio';
+        }
+
+        if (!empty($data['email_dueno']) && !filter_var($data['email_dueno'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'El email del dueño no es válido';
+        }
+
+        if (!empty($data['email_agente']) && !filter_var($data['email_agente'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'El email del agente no es válido';
+        }
+
+        if (!empty($errors)) {
+            flash('error', implode('<br>', $errors));
+            redirect('perfil.php');
+        }
+
+        $success = $this->propiedadModel->updateByPropietario($propiedadId, $data);
+        
+        if ($success) {
+            flash('success', 'Datos de la propiedad actualizados exitosamente');
+        } else {
+            flash('error', 'Error al actualizar los datos de la propiedad');
         }
         
         redirect('perfil.php');

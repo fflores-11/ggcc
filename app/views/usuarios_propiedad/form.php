@@ -89,10 +89,10 @@ $propiedadIdSeleccionada = $isEdit ? ($usuario['propiedad_id'] ?? '') : '';
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?php echo $isEdit ? htmlspecialchars($usuario['email']) : ''; ?>" required>
-                                <div class="invalid-feedback">Ingrese un email válido</div>
+                                       value="<?php echo $isEdit ? htmlspecialchars($usuario['email']) : ''; ?>">
+                                <div class="form-text">Campo opcional</div>
                             </div>
 
                             <div class="col-md-6">
