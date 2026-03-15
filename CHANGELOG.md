@@ -4,6 +4,112 @@ Todos los cambios notables en el proyecto Sistema de Gestión de Gastos Comunes 
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.1.0] - 2026-03-15
+
+### 🎉 Sistema de Usuarios por Propiedad - Implementación Completa
+
+#### ✨ Nuevas Funcionalidades
+
+##### Sistema de Usuarios por Propiedad
+- **Nuevo rol de usuario: "propietario"**
+  - Acceso limitado solo a datos de su propiedad específica
+  - Permite visualizar reportes personales y consolidado de su propiedad
+  - Puede editar su perfil (email, whatsapp, contraseña)
+  - No puede acceder a funciones administrativas
+
+- **Gestión de usuarios por propiedad (Admin/Administrador)**
+  - Nuevo módulo: "Usuarios por Propiedad" en menú de mantenedores
+  - Crear usuarios asociados a propiedades específicas
+  - Nombre de usuario generado automáticamente desde nombre de propiedad (formato slug)
+    - Ejemplo: "Casa 9" → usuario: `casa-9`
+  - Contraseña generada automáticamente de 10 caracteres
+  - Campos: Comunidad, Propiedad, Usuario, Email, WhatsApp, Contraseña
+  - Validación: solo una cuenta por propiedad
+  - Edición limitada: solo email, whatsapp y contraseña son editables
+  - Eliminación lógica (soft delete): desactiva usuario sin borrar datos
+  - Generar nueva contraseña para usuarios existentes
+
+- **Base de datos - Nuevas columnas en tabla `usuarios`**
+  - `propiedad_id` (INT, FK a propiedades): Propiedad asociada al usuario
+  - `whatsapp` (VARCHAR 20): Número de contacto
+  - `es_propietario` (TINYINT): Flag para identificar usuarios de propiedad
+  - `rol` actualizado: ENUM ahora incluye 'propietario'
+  - Índices optimizados para búsquedas por propiedad
+
+- **Vistas y Controladores**
+  - `UsuariosPropiedadController.php`: Controlador completo CRUD
+  - `usuarios_propiedad/index.php`: Listado de usuarios por propiedad
+  - `usuarios_propiedad/form.php`: Formulario crear/editar con generación automática de usuario
+  - `usuarios_propiedad/perfil.php`: Perfil del propietario (editable)
+  - AJAX dinámico para cargar propiedades según comunidad seleccionada
+
+##### Autenticación Mejorada
+- **Login con Email o Usuario**
+  - Los usuarios pueden iniciar sesión con email O nombre de usuario
+  - Label actualizado: "Email o Usuario"
+  - Compatibilidad con usuarios existentes (admin, administrador, presidente)
+
+##### Restricciones de Acceso para Propietarios
+- **Dashboard limitado para propietarios:**
+  - ❌ Oculto: Accesos Rápidos
+  - ❌ Oculto: Últimas Actividades
+  - ❌ Oculto: Comunidades con Mayor Deuda
+  - ❌ Oculto: Resumen por Comunidad
+  - ✅ Visible: Métricas generales y gráfico de tendencias
+  - ✅ Visible: Propiedades morosas (solo si aplica a su propiedad)
+
+- **Menú de navegación adaptativo**
+  - Propietarios ven: Dashboard, Mi Perfil, Mis Reportes, Mi Consolidado
+  - Admin/Administrador ven: Todos los módulos + "Usuarios por Propiedad"
+
+##### Reportes Filtrados por Propiedad
+- **Reportes de propietarios limitados a su propiedad:**
+  - Morosidad: Solo ve su estado de deuda
+  - Pagos: Solo sus pagos realizados
+  - Deudas: Solo sus deudas pendientes/pagadas
+  - Egresos: No disponible (información administrativa)
+
+##### Consolidado Personal
+- **Consolidado filtrado por propiedad**
+  - Propietarios solo ven su fila en la matriz de pagos
+  - Acceso al histórico completo de su propiedad
+
+#### 🔒 Seguridad Implementada
+- Validación: propietarios no pueden ver datos de otras propiedades
+- Verificación de permisos en cada acción del controlador
+- Filtro SQL automático por propiedad para usuarios con rol 'propietario'
+- CSRF tokens en todos los formularios
+- Soft delete: usuarios desactivados no aparecen en listado pero mantienen histórico
+
+#### 🗄️ Migración de Base de Datos
+- Archivo: `config/migracion_usuarios_propiedad.sql`
+- Agrega columnas necesarias a tabla `usuarios`
+- Crea índices optimizados
+- Vista `vista_usuarios_propietarios` para consultas
+
+#### 🛠️ Archivos Creados/Modificados
+**Nuevos archivos:**
+- `app/controllers/UsuariosPropiedadController.php`
+- `app/views/usuarios_propiedad/index.php`
+- `app/views/usuarios_propiedad/form.php`
+- `app/views/usuarios_propiedad/perfil.php`
+- `public/usuarios_propiedad.php`
+- `public/perfil.php`
+- `config/migracion_usuarios_propiedad.sql`
+
+**Archivos modificados:**
+- `app/models/Usuario.php`: Nuevos métodos para gestión de propietarios
+- `app/controllers/ReportesController.php`: Filtros por propiedad
+- `app/controllers/ConsolidadosController.php`: Filtros por propiedad
+- `app/controllers/AuthController.php`: Login con email o usuario
+- `app/views/dashboard/index.php`: Secciones ocultas para propietarios
+- `app/views/partials/header.php`: Menú adaptativo por rol
+- `app/views/auth/login.php`: Label "Email o Usuario"
+- `config/config.php`: Nueva función `getUserPropiedadId()`
+- `config/database.sql`: Esquema actualizado
+
+---
+
 ## [1.0.0] - 2026-03-08
 
 ### 🎉 Primera Versión Completa - Sistema Funcional
@@ -283,6 +389,17 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ## Notas de Versión
 
+### Versión 1.1.0
+- **Fecha de lanzamiento:** 15 de Marzo de 2026
+- **Estado:** Estable y funcional
+- **Nuevas funcionalidades principales:**
+  - ✅ Sistema de Usuarios por Propiedad completo
+  - ✅ Login con Email o Nombre de Usuario
+  - ✅ Dashboard adaptativo según rol de usuario
+  - ✅ Reportes y consolidados filtrados por propiedad
+- **Desarrollado por:** Claude Code (Anthropic)
+- **Tiempo de desarrollo:** ~3 horas de trabajo continuo
+
 ### Versión 1.0.0
 - **Fecha de lanzamiento:** 6 de Marzo de 2026
 - **Estado:** Estable y funcional
@@ -298,4 +415,4 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 Para reportar bugs o solicitar nuevas funcionalidades, contacte al administrador del sistema.
 
-**Sistema GGCC v1.0.0** - Sistema de Administración de Gastos Comunes de Condominios
+**Sistema GGCC v1.1.0** - Sistema de Administración de Gastos Comunes de Condominios

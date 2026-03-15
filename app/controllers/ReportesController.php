@@ -23,6 +23,15 @@ class ReportesController {
      * Página principal de reportes
      */
     public function index(): void {
+        // Si es propietario, obtener su comunidad y propiedad
+        if (getUserRole() === 'propietario') {
+            $userModel = new Usuario();
+            $usuario = $userModel->getUsuarioPropietario(getUserId());
+            if ($usuario) {
+                redirect('reportes.php?action=morosidad&comunidad_id=' . $usuario['comunidad_id'] . '&propiedad_id=' . $usuario['propiedad_id']);
+            }
+        }
+
         $comunidades = $this->comunidadModel->getForSelect();
         $title = 'Reportes';
         require_once VIEWS_PATH . '/reportes/index.php';
@@ -39,13 +48,53 @@ class ReportesController {
         $morosos = [];
         $comunidad = null;
         
-        if ($comunidadId) {
+        // Si es propietario, forzar filtro por su propiedad
+        if (getUserRole() === 'propietario') {
+            $userModel = new Usuario();
+            $usuario = $userModel->getUsuarioPropietario(getUserId());
+            if ($usuario) {
+                $comunidadId = $usuario['comunidad_id'];
+                $propiedadId = $usuario['propiedad_id'];
+                $comunidad = $this->comunidadModel->find($comunidadId);
+                // Obtener morosidad solo de la propiedad del usuario
+                $moroso = $this->getMorosoByPropiedad($propiedadId);
+                if ($moroso) {
+                    $morosos = [$moroso];
+                }
+            }
+        } elseif ($comunidadId) {
             $comunidad = $this->comunidadModel->find($comunidadId);
             $morosos = $this->getMorosos($comunidadId, $minimoMeses);
         }
         
         $title = 'Reporte de Morosidad';
         require_once VIEWS_PATH . '/reportes/morosidad.php';
+    }
+
+    /**
+     * Obtiene morosidad de una propiedad específica
+     */
+    private function getMorosoByPropiedad(int $propiedadId): ?array {
+        $sql = "SELECT p.id, p.nombre as propiedad_nombre, p.nombre_dueno, p.email_dueno, p.whatsapp_dueno,
+                       c.nombre as comunidad_nombre,
+                       COUNT(d.id) as meses_adeudados,
+                       SUM(d.monto) as total_adeudado,
+                       GROUP_CONCAT(DISTINCT CONCAT(d.mes, '-', d.anio) ORDER BY d.anio, d.mes SEPARATOR ', ') as periodos_adeudados,
+                       MIN(CONCAT(d.anio, '-', LPAD(d.mes, 2, '0'))) as primera_deuda
+                FROM propiedades p
+                LEFT JOIN deudas d ON p.id = d.propiedad_id AND d.estado = 'Pendiente'
+                LEFT JOIN comunidades c ON p.comunidad_id = c.id
+                WHERE p.id = :propiedad_id 
+                AND p.activo = 1
+                AND d.estado = 'Pendiente'
+                GROUP BY p.id, p.nombre, p.nombre_dueno, p.email_dueno, p.whatsapp_dueno, c.nombre
+                HAVING meses_adeudados > 0";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':propiedad_id' => $propiedadId]);
+        
+        $result = $stmt->fetch();
+        return $result ?: null;
     }
 
     /**
@@ -61,7 +110,18 @@ class ReportesController {
         $comunidad = null;
         $totalRecaudado = 0;
         
-        if ($comunidadId) {
+        // Si es propietario, forzar filtro por su propiedad
+        if (getUserRole() === 'propietario') {
+            $userModel = new Usuario();
+            $usuario = $userModel->getUsuarioPropietario(getUserId());
+            if ($usuario) {
+                $comunidadId = $usuario['comunidad_id'];
+                $propiedadId = $usuario['propiedad_id'];
+                $comunidad = $this->comunidadModel->find($comunidadId);
+                $pagos = $this->getPagosPorPeriodoYPropiedad($propiedadId, $mes, $anio);
+                $totalRecaudado = array_sum(array_column($pagos, 'monto'));
+            }
+        } elseif ($comunidadId) {
             $comunidad = $this->comunidadModel->find($comunidadId);
             $pagos = $this->getPagosPorPeriodo($comunidadId, $mes, $anio);
             $totalRecaudado = array_sum(array_column($pagos, 'monto'));
@@ -69,6 +129,32 @@ class ReportesController {
         
         $title = 'Reporte de Pagos';
         require_once VIEWS_PATH . '/reportes/pagos.php';
+    }
+
+    /**
+     * Obtiene pagos por período y propiedad
+     */
+    private function getPagosPorPeriodoYPropiedad(int $propiedadId, int $mes, int $anio): array {
+        $sql = "SELECT p.id, p.fecha, p.monto, p.observaciones,
+                       pr.nombre as propiedad_nombre, pr.nombre_dueno,
+                       GROUP_CONCAT(DISTINCT CONCAT(d.mes, '-', d.anio) ORDER BY d.anio, d.mes SEPARATOR ', ') as meses_pagados
+                FROM pagos p
+                LEFT JOIN propiedades pr ON p.propiedad_id = pr.id
+                LEFT JOIN pagos_detalle pd ON p.id = pd.pago_id
+                LEFT JOIN deudas d ON pd.deuda_id = d.id
+                WHERE p.propiedad_id = :propiedad_id
+                AND MONTH(p.fecha) = :mes AND YEAR(p.fecha) = :anio
+                GROUP BY p.id
+                ORDER BY p.fecha DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':propiedad_id' => $propiedadId,
+            ':mes' => $mes,
+            ':anio' => $anio
+        ]);
+        
+        return $stmt->fetchAll();
     }
 
     /**
@@ -84,7 +170,18 @@ class ReportesController {
         $comunidad = null;
         $totalPendiente = 0;
         
-        if ($comunidadId) {
+        // Si es propietario, forzar filtro por su propiedad
+        if (getUserRole() === 'propietario') {
+            $userModel = new Usuario();
+            $usuario = $userModel->getUsuarioPropietario(getUserId());
+            if ($usuario) {
+                $comunidadId = $usuario['comunidad_id'];
+                $propiedadId = $usuario['propiedad_id'];
+                $comunidad = $this->comunidadModel->find($comunidadId);
+                $deudas = $this->getDeudasPorPeriodoYPropiedad($propiedadId, $mes, $anio);
+                $totalPendiente = array_sum(array_column($deudas, 'monto'));
+            }
+        } elseif ($comunidadId) {
             $comunidad = $this->comunidadModel->find($comunidadId);
             $deudas = $this->getDeudasPorPeriodo($comunidadId, $mes, $anio);
             $totalPendiente = array_sum(array_column($deudas, 'monto'));
@@ -92,6 +189,29 @@ class ReportesController {
         
         $title = 'Reporte de Deudas';
         require_once VIEWS_PATH . '/reportes/deudas.php';
+    }
+
+    /**
+     * Obtiene deudas por período y propiedad
+     */
+    private function getDeudasPorPeriodoYPropiedad(int $propiedadId, int $mes, int $anio): array {
+        $sql = "SELECT d.id, d.monto, d.estado, d.created_at,
+                       p.nombre as propiedad_nombre, p.nombre_dueno, p.email_dueno, p.whatsapp_dueno
+                FROM deudas d
+                LEFT JOIN propiedades p ON d.propiedad_id = p.id
+                WHERE d.propiedad_id = :propiedad_id
+                AND d.mes = :mes AND d.anio = :anio
+                AND p.activo = 1
+                ORDER BY d.estado DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':propiedad_id' => $propiedadId,
+            ':mes' => $mes,
+            ':anio' => $anio
+        ]);
+        
+        return $stmt->fetchAll();
     }
 
     /**
@@ -104,6 +224,12 @@ class ReportesController {
         $comunidades = $this->comunidadModel->getForSelect();
         $egresos = [];
         $totalEgresos = 0;
+        
+        // Propietarios no pueden ver egresos (información administrativa)
+        if (getUserRole() === 'propietario') {
+            flash('error', 'No tiene permisos para ver este reporte');
+            redirect('reportes.php');
+        }
         
         // Obtener todos los pagos a colaboradores del período
         $egresos = $this->getEgresosPorPeriodo($mes, $anio);

@@ -18,7 +18,7 @@ ini_set('display_errors', 1);
 
 // Constantes del sistema
 define('APP_NAME', 'Sistema GGCC');
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.1.0');
 define('BASE_URL', '/');
 
 // === CONFIGURACIÓN DE URL DEL SERVIDOR ===
@@ -187,6 +187,14 @@ function getUserComunidadId(): ?int {
 }
 
 /**
+ * Obtiene el ID de la propiedad asignada al usuario logueado (solo propietarios)
+ * @return int|null
+ */
+function getUserPropiedadId(): ?int {
+    return $_SESSION['user_propiedad_id'] ?? null;
+}
+
+/**
  * Verifica si el usuario tiene acceso a una comunidad específica
  * @param int $comunidadId
  * @return bool
@@ -197,7 +205,7 @@ function hasAccessToComunidad(int $comunidadId): bool {
         return true;
     }
     
-    // Administradores y presidentes solo acceden a su comunidad asignada
+    // Administradores, presidentes y propietarios solo acceden a su comunidad asignada
     $userComunidadId = getUserComunidadId();
     return $userComunidadId === $comunidadId;
 }

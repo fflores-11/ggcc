@@ -32,7 +32,20 @@ class ConsolidadosController {
         $meses = [];
         $totales = [];
         
-        if ($comunidadId) {
+        // Si es propietario, forzar su comunidad y propiedad
+        if (getUserRole() === 'propietario') {
+            $userModel = new Usuario();
+            $usuario = $userModel->getUsuarioPropietario(getUserId());
+            if ($usuario) {
+                $comunidadId = $usuario['comunidad_id'];
+                $propiedadId = $usuario['propiedad_id'];
+                $comunidad = $this->comunidadModel->find($comunidadId);
+                $resultado = $this->generarMatrizPropiedad($propiedadId, $anio);
+                $matriz = $resultado['filas'];
+                $totales = $resultado['totales'];
+                $meses = $this->getMesesDisponibles($comunidadId, $anio);
+            }
+        } elseif ($comunidadId) {
             $comunidad = $this->comunidadModel->find($comunidadId);
             $resultado = $this->generarMatriz($comunidadId, $anio);
             $matriz = $resultado['filas'];
@@ -42,6 +55,85 @@ class ConsolidadosController {
         
         $title = 'Consolidado de Pagos';
         require_once VIEWS_PATH . '/consolidados/index.php';
+    }
+
+    /**
+     * Genera la matriz de pagos para una propiedad específica
+     * @param int $propiedadId
+     * @param int $anio
+     * @return array
+     */
+    private function generarMatrizPropiedad(int $propiedadId, int $anio): array {
+        // Obtener la propiedad
+        $propiedad = $this->propiedadModel->find($propiedadId);
+        
+        $matriz = [];
+        $totalesPorMes = [];
+        $granTotalPagado = 0;
+        $granTotalPendiente = 0;
+        
+        $fila = [
+            'propiedad' => $propiedad,
+            'meses' => [],
+            'total_pagado' => 0,
+            'total_pendiente' => 0
+        ];
+        
+        // Obtener deudas de la propiedad para el año
+        $sql = "SELECT d.* FROM deudas d 
+                WHERE d.propiedad_id = :propiedad_id 
+                AND d.anio = :anio
+                ORDER BY d.mes";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':propiedad_id' => $propiedadId,
+            ':anio' => $anio
+        ]);
+        $deudas = $stmt->fetchAll();
+        
+        foreach ($deudas as $deuda) {
+            $mes = (int) $deuda['mes'];
+            $estado = $deuda['estado'];
+            $monto = (float) $deuda['monto'];
+            
+            $fila['meses'][$mes] = [
+                'estado' => $estado,
+                'monto' => $monto,
+                'deuda_id' => $deuda['id']
+            ];
+            
+            if ($estado === 'Pagado') {
+                $fila['total_pagado'] += $monto;
+            } else {
+                $fila['total_pendiente'] += $monto;
+            }
+            
+            // Acumular totales por mes
+            if (!isset($totalesPorMes[$mes])) {
+                $totalesPorMes[$mes] = ['pagado' => 0, 'pendiente' => 0];
+            }
+            
+            if ($estado === 'Pagado') {
+                $totalesPorMes[$mes]['pagado'] += $monto;
+            } else {
+                $totalesPorMes[$mes]['pendiente'] += $monto;
+            }
+        }
+        
+        $granTotalPagado += $fila['total_pagado'];
+        $granTotalPendiente += $fila['total_pendiente'];
+        
+        $matriz[] = $fila;
+        
+        return [
+            'filas' => $matriz,
+            'totales' => [
+                'totales' => $totalesPorMes,
+                'gran_total_pagado' => $granTotalPagado,
+                'gran_total_pendiente' => $granTotalPendiente
+            ]
+        ];
     }
 
     /**

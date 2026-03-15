@@ -205,10 +205,10 @@ $bgConfig = $configModel->getLoginBackgroundConfig();
                     <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
                     
                     <div class="mb-4">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control form-control-lg" 
+                        <label for="email" class="form-label">Email o Usuario</label>
+                        <input type="text" class="form-control form-control-lg" 
                                id="email" name="email" required 
-                               placeholder="nombre@ejemplo.com"
+                               placeholder="nombre@ejemplo.com o usuario"
                                value="<?= isset($_POST['email']) ? e($_POST['email']) : '' ?>">
                     </div>
                     

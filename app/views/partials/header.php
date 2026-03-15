@@ -343,55 +343,79 @@
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
             
-            <div class="sidebar-divider"></div>
-            <div class="menu-title">Mantenedores</div>
-            
-            <a href="usuarios.php" class="<?= basename($_SERVER['PHP_SELF']) === 'usuarios.php' ? 'active' : '' ?>">
-                <i class="bi bi-people"></i> Usuarios
-            </a>
-            <a href="comunidades.php" class="<?= basename($_SERVER['PHP_SELF']) === 'comunidades.php' ? 'active' : '' ?>">
-                <i class="bi bi-building"></i> Comunidades
-            </a>
-            <a href="propiedades.php" class="<?= basename($_SERVER['PHP_SELF']) === 'propiedades.php' ? 'active' : '' ?>">
-                <i class="bi bi-house-door"></i> Propiedades
-            </a>
-            
-            <div class="sidebar-divider"></div>
-            <div class="menu-title">Operaciones</div>
-            
-            <a href="pagos.php" class="<?= basename($_SERVER['PHP_SELF']) === 'pagos.php' ? 'active' : '' ?>">
-                <i class="bi bi-cash-coin"></i> Pagos
-            </a>
-            <a href="saldos-mensuales.php" class="<?= basename($_SERVER['PHP_SELF']) === 'saldos-mensuales.php' ? 'active' : '' ?>">
-                <i class="bi bi-cash-stack"></i> Saldos Mensuales
-            </a>
-            <a href="colaboradores.php" class="<?= basename($_SERVER['PHP_SELF']) === 'colaboradores.php' ? 'active' : '' ?>">
-                <i class="bi bi-people-fill"></i> Colaboradores
-            </a>
-            <a href="correos.php" class="<?= basename($_SERVER['PHP_SELF']) === 'correos.php' ? 'active' : '' ?>">
-                <i class="bi bi-envelope"></i> Envío de Correos
-            </a>
-            <a href="consolidados.php" class="<?= basename($_SERVER['PHP_SELF']) === 'consolidados.php' ? 'active' : '' ?>">
-                <i class="bi bi-grid-3x3"></i> Consolidados
-            </a>
-            
-            <div class="sidebar-divider"></div>
-            <div class="menu-title">Reportes</div>
-            
-            <a href="reportes.php" class="<?= basename($_SERVER['PHP_SELF']) === 'reportes.php' ? 'active' : '' ?>">
-                <i class="bi bi-file-earmark-text"></i> Reportes
-            </a>
-            
-            <?php if (hasRole('admin')): ?>
-            <div class="sidebar-divider"></div>
-            <div class="menu-title">Administración</div>
-            
-            <a href="configuracion.php" class="<?= basename($_SERVER['PHP_SELF']) === 'configuracion.php' ? 'active' : '' ?>">
-                <i class="bi bi-gear"></i> Configuración Sistema
-            </a>
-            <a href="configuracion_smtp.php" class="<?= basename($_SERVER['PHP_SELF']) === 'configuracion_smtp.php' ? 'active' : '' ?>">
-                <i class="bi bi-envelope-gear"></i> Configuración SMTP
-            </a>
+            <?php if (hasRole('propietario')): ?>
+                <!-- Menú para Propietarios -->
+                <div class="sidebar-divider"></div>
+                <div class="menu-title">Mi Cuenta</div>
+                
+                <a href="perfil.php" class="<?= basename($_SERVER['PHP_SELF']) === 'perfil.php' ? 'active' : '' ?>">
+                    <i class="bi bi-person"></i> Mi Perfil
+                </a>
+                
+                <div class="sidebar-divider"></div>
+                <div class="menu-title">Mis Reportes</div>
+                
+                <a href="reportes.php" class="<?= basename($_SERVER['PHP_SELF']) === 'reportes.php' ? 'active' : '' ?>">
+                    <i class="bi bi-file-earmark-text"></i> Mis Reportes
+                </a>
+                <a href="consolidados.php" class="<?= basename($_SERVER['PHP_SELF']) === 'consolidados.php' ? 'active' : '' ?>">
+                    <i class="bi bi-grid-3x3"></i> Mi Consolidado
+                </a>
+            <?php else: ?>
+                <!-- Menú para Admin y Administrador -->
+                <div class="sidebar-divider"></div>
+                <div class="menu-title">Mantenedores</div>
+                
+                <a href="usuarios.php" class="<?= basename($_SERVER['PHP_SELF']) === 'usuarios.php' ? 'active' : '' ?>">
+                    <i class="bi bi-people"></i> Usuarios
+                </a>
+                <a href="usuarios_propiedad.php" class="<?= basename($_SERVER['PHP_SELF']) === 'usuarios_propiedad.php' ? 'active' : '' ?>">
+                    <i class="bi bi-house-door"></i> Usuarios por Propiedad
+                </a>
+                <a href="comunidades.php" class="<?= basename($_SERVER['PHP_SELF']) === 'comunidades.php' ? 'active' : '' ?>">
+                    <i class="bi bi-building"></i> Comunidades
+                </a>
+                <a href="propiedades.php" class="<?= basename($_SERVER['PHP_SELF']) === 'propiedades.php' ? 'active' : '' ?>">
+                    <i class="bi bi-house-door"></i> Propiedades
+                </a>
+                
+                <div class="sidebar-divider"></div>
+                <div class="menu-title">Operaciones</div>
+                
+                <a href="pagos.php" class="<?= basename($_SERVER['PHP_SELF']) === 'pagos.php' ? 'active' : '' ?>">
+                    <i class="bi bi-cash-coin"></i> Pagos
+                </a>
+                <a href="saldos-mensuales.php" class="<?= basename($_SERVER['PHP_SELF']) === 'saldos-mensuales.php' ? 'active' : '' ?>">
+                    <i class="bi bi-cash-stack"></i> Saldos Mensuales
+                </a>
+                <a href="colaboradores.php" class="<?= basename($_SERVER['PHP_SELF']) === 'colaboradores.php' ? 'active' : '' ?>">
+                    <i class="bi bi-people-fill"></i> Colaboradores
+                </a>
+                <a href="correos.php" class="<?= basename($_SERVER['PHP_SELF']) === 'correos.php' ? 'active' : '' ?>">
+                    <i class="bi bi-envelope"></i> Envío de Correos
+                </a>
+                <a href="consolidados.php" class="<?= basename($_SERVER['PHP_SELF']) === 'consolidados.php' ? 'active' : '' ?>">
+                    <i class="bi bi-grid-3x3"></i> Consolidados
+                </a>
+                
+                <div class="sidebar-divider"></div>
+                <div class="menu-title">Reportes</div>
+                
+                <a href="reportes.php" class="<?= basename($_SERVER['PHP_SELF']) === 'reportes.php' ? 'active' : '' ?>">
+                    <i class="bi bi-file-earmark-text"></i> Reportes
+                </a>
+                
+                <?php if (hasRole('admin')): ?>
+                <div class="sidebar-divider"></div>
+                <div class="menu-title">Administración</div>
+                
+                <a href="configuracion.php" class="<?= basename($_SERVER['PHP_SELF']) === 'configuracion.php' ? 'active' : '' ?>">
+                    <i class="bi bi-gear"></i> Configuración Sistema
+                </a>
+                <a href="configuracion_smtp.php" class="<?= basename($_SERVER['PHP_SELF']) === 'configuracion_smtp.php' ? 'active' : '' ?>">
+                    <i class="bi bi-envelope-gear"></i> Configuración SMTP
+                </a>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
@@ -416,8 +440,10 @@
                     <i class="bi bi-chevron-down ms-2"></i>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
-                    <li><hr class="dropdown-divider"></li>
+                    <?php if (hasRole('propietario')): ?>
+                        <li><a class="dropdown-item" href="perfil.php"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                    <?php endif; ?>
                     <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
                 </ul>
             </div>

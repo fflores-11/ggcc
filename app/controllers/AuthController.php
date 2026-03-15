@@ -62,15 +62,26 @@ class AuthController {
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_rol'] = $user['rol'];
             
-            // Guardar comunidad_id para administradores y presidentes
-            if (in_array($user['rol'], ['administrador', 'presidente'])) {
+            // Guardar comunidad_id para administradores, presidentes y propietarios
+            if (in_array($user['rol'], ['administrador', 'presidente', 'propietario'])) {
                 $_SESSION['user_comunidad_id'] = $user['comunidad_id'] ?? null;
             } else {
                 $_SESSION['user_comunidad_id'] = null; // Super admin accede a todas
             }
 
+            // Guardar propiedad_id para propietarios
+            if ($user['rol'] === 'propietario') {
+                $_SESSION['user_propiedad_id'] = $user['propiedad_id'] ?? null;
+            }
+
             flash('success', 'Bienvenido, ' . $user['nombre']);
-            redirect('index.php');
+            
+            // Redirigir según el rol
+            if ($user['rol'] === 'propietario') {
+                redirect('index.php');
+            } else {
+                redirect('index.php');
+            }
         } else {
             flash('error', 'Email o contraseña incorrectos');
             redirect('login.php');

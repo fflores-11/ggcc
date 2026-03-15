@@ -10,16 +10,25 @@ class Usuario extends Model {
     protected string $table = 'usuarios';
 
     /**
-     * Autentica un usuario
-     * @param string $email
+     * Autentica un usuario por email o nombre de usuario
+     * @param string $emailOUsuario
      * @param string $password
      * @return array|null
      */
-    public function authenticate(string $email, string $password): ?array {
+    public function authenticate(string $emailOUsuario, string $password): ?array {
+        // Intentar buscar por email primero
         $sql = "SELECT * FROM {$this->table} WHERE email = :email AND activo = 1 LIMIT 1";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':email' => $email]);
+        $stmt->execute([':email' => $emailOUsuario]);
         $user = $stmt->fetch();
+
+        // Si no se encontró por email, buscar por nombre de usuario
+        if (!$user) {
+            $sql = "SELECT * FROM {$this->table} WHERE nombre = :nombre AND activo = 1 LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':nombre' => $emailOUsuario]);
+            $user = $stmt->fetch();
+        }
 
         if ($user && password_verify($password, $user['password'])) {
             // Actualizar último acceso
@@ -140,16 +149,25 @@ class Usuario extends Model {
 
         if (empty($data['rol'])) {
             $errors[] = 'El rol es obligatorio';
-        } elseif (!in_array($data['rol'], ['admin', 'administrador', 'presidente'])) {
+        } elseif (!in_array($data['rol'], ['admin', 'administrador', 'presidente', 'propietario'])) {
             $errors[] = 'El rol no es válido';
         }
 
-        // Validar comunidad_id para administradores
-        if ($data['rol'] === 'administrador') {
+        // Validar comunidad_id para administradores y propietarios
+        if (in_array($data['rol'], ['administrador', 'propietario'])) {
             if (empty($data['comunidad_id'])) {
-                $errors[] = 'Debe seleccionar una comunidad para el usuario administrador';
+                $errors[] = 'Debe seleccionar una comunidad para el usuario';
             } elseif (!is_numeric($data['comunidad_id'])) {
                 $errors[] = 'La comunidad seleccionada no es válida';
+            }
+        }
+
+        // Validar propiedad_id para propietarios
+        if ($data['rol'] === 'propietario') {
+            if (empty($data['propiedad_id'])) {
+                $errors[] = 'Debe seleccionar una propiedad para el usuario propietario';
+            } elseif (!is_numeric($data['propiedad_id'])) {
+                $errors[] = 'La propiedad seleccionada no es válida';
             }
         }
 
@@ -363,5 +381,193 @@ class Usuario extends Model {
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->rowCount();
+    }
+
+    /**
+     * Genera una contraseña aleatoria
+     * @param int $length Longitud de la contraseña (default 10)
+     * @return string
+     */
+    public function generarPassword(int $length = 10): string {
+        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $password = '';
+        $max = strlen($chars) - 1;
+        
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $chars[random_int(0, $max)];
+        }
+        
+        return $password;
+    }
+
+    /**
+     * Obtiene todos los usuarios propietarios con información de propiedad
+     * @param int|null $comunidadId Filtrar por comunidad (opcional)
+     * @return array
+     */
+    public function getUsuariosPropietarios(?int $comunidadId = null, bool $soloActivos = true): array {
+        $sql = "SELECT u.*, p.nombre as propiedad_nombre, p.nombre_dueno, 
+                       p.email_dueno, p.whatsapp_dueno, c.nombre as comunidad_nombre
+                FROM {$this->table} u
+                LEFT JOIN propiedades p ON u.propiedad_id = p.id
+                LEFT JOIN comunidades c ON u.comunidad_id = c.id
+                WHERE u.es_propietario = 1";
+        
+        $params = [];
+        
+        if ($soloActivos) {
+            $sql .= " AND u.activo = 1";
+        }
+        
+        if ($comunidadId !== null) {
+            $sql .= " AND u.comunidad_id = :comunidad_id";
+            $params[':comunidad_id'] = $comunidadId;
+        }
+        
+        $sql .= " ORDER BY c.nombre, p.nombre";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene un usuario propietario con información completa de propiedad
+     * @param int $userId
+     * @return array|null
+     */
+    public function getUsuarioPropietario(int $userId): ?array {
+        $sql = "SELECT u.*, p.nombre as propiedad_nombre, p.nombre_dueno, 
+                       p.email_dueno, p.whatsapp_dueno, p.tipo as propiedad_tipo,
+                       p.precio_gastos_comunes, c.nombre as comunidad_nombre,
+                       c.direccion as comunidad_direccion, c.nombre_presidente,
+                       c.whatsapp_presidente, c.email_presidente
+                FROM {$this->table} u
+                LEFT JOIN propiedades p ON u.propiedad_id = p.id
+                LEFT JOIN comunidades c ON u.comunidad_id = c.id
+                WHERE u.id = :id AND u.es_propietario = 1
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $userId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    /**
+     * Verifica si una propiedad ya tiene usuario asignado
+     * @param int $propiedadId
+     * @param int|null $excludeUserId Excluir un usuario específico (para edición)
+     * @return bool
+     */
+    public function propiedadHasUsuario(int $propiedadId, ?int $excludeUserId = null): bool {
+        $sql = "SELECT COUNT(*) FROM {$this->table} 
+                WHERE propiedad_id = :propiedad_id AND es_propietario = 1 AND activo = 1";
+        $params = [':propiedad_id' => $propiedadId];
+
+        if ($excludeUserId !== null) {
+            $sql .= " AND id != :exclude_id";
+            $params[':exclude_id'] = $excludeUserId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    /**
+     * Crea un usuario propietario
+     * @param array $data
+     * @return int|false
+     */
+    public function createPropietario(array $data): int|false {
+        // Verificar que la propiedad no tenga ya un usuario
+        if ($this->propiedadHasUsuario((int)$data['propiedad_id'])) {
+            return false;
+        }
+
+        // Preparar datos específicos para propietario
+        $data['rol'] = 'propietario';
+        $data['es_propietario'] = 1;
+        
+        // El nombre será el nombre de la propiedad
+        if (!isset($data['nombre'])) {
+            // Obtener nombre de propiedad
+            $sql = "SELECT nombre FROM propiedades WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $data['propiedad_id']]);
+            $data['nombre'] = $stmt->fetchColumn() ?: 'Propietario';
+        }
+
+        return $this->create($data);
+    }
+
+    /**
+     * Actualiza datos de perfil para propietario (solo campos editables)
+     * @param int $userId
+     * @param array $data
+     * @return bool
+     */
+    public function updatePerfilPropietario(int $userId, array $data): bool {
+        // Solo permitir actualizar email y whatsapp
+        $allowedFields = ['email', 'whatsapp'];
+        $updateData = [];
+        
+        foreach ($allowedFields as $field) {
+            if (isset($data[$field])) {
+                $updateData[$field] = $data[$field];
+            }
+        }
+        
+        // Si hay password, agregarlo
+        if (isset($data['password']) && !empty($data['password'])) {
+            $updateData['password'] = $data['password'];
+        }
+        
+        if (empty($updateData)) {
+            return true; // No hay nada que actualizar
+        }
+        
+        return $this->update($userId, $updateData);
+    }
+
+    /**
+     * Verifica si un usuario tiene acceso a una propiedad específica
+     * @param int $userId
+     * @param int $propiedadId
+     * @return bool
+     */
+    public function hasAccessToPropiedad(int $userId, int $propiedadId): bool {
+        $sql = "SELECT rol, propiedad_id, comunidad_id FROM {$this->table} WHERE id = :id AND activo = 1 LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $userId]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Super admin tiene acceso a todo
+        if ($user['rol'] === 'admin') {
+            return true;
+        }
+
+        // Propietario solo accede a su propiedad
+        if ($user['rol'] === 'propietario') {
+            return (int)$user['propiedad_id'] === $propiedadId;
+        }
+
+        // Administrador y presidente acceden si la propiedad pertenece a su comunidad
+        if (in_array($user['rol'], ['administrador', 'presidente'])) {
+            $sql = "SELECT COUNT(*) FROM propiedades WHERE id = :propiedad_id AND comunidad_id = :comunidad_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':propiedad_id' => $propiedadId,
+                ':comunidad_id' => $user['comunidad_id']
+            ]);
+            return (bool) $stmt->fetchColumn();
+        }
+
+        return false;
     }
 }

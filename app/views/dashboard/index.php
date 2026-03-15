@@ -128,6 +128,7 @@ require_once __DIR__ . '/../partials/header.php';
 </div>
 <?php endif; ?>
 
+<?php if (getUserRole() !== 'propietario'): ?>
 <div class="row">
     <!-- Accesos Rápidos -->
     <div class="col-md-4 mb-4">
@@ -245,7 +246,9 @@ require_once __DIR__ . '/../partials/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if (getUserRole() !== 'propietario'): ?>
 <div class="row">
     <!-- Comunidades con Mayor Deuda -->
     <div class="col-md-6 mb-4">
@@ -340,6 +343,7 @@ require_once __DIR__ . '/../partials/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <!-- Script para el gráfico -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

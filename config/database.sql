@@ -12,15 +12,24 @@ CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
+    whatsapp VARCHAR(20) NULL,
     password VARCHAR(255) NOT NULL,
-    rol ENUM('admin', 'administrador', 'presidente') DEFAULT 'administrador',
+    rol ENUM('admin', 'administrador', 'presidente', 'propietario') DEFAULT 'administrador',
+    comunidad_id INT NULL,
+    propiedad_id INT NULL,
+    es_propietario TINYINT(1) DEFAULT 0,
     activo TINYINT(1) DEFAULT 1,
     ultimo_acceso DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_email (email),
     INDEX idx_rol (rol),
-    INDEX idx_activo (activo)
+    INDEX idx_activo (activo),
+    INDEX idx_comunidad_id (comunidad_id),
+    INDEX idx_propiedad_id (propiedad_id),
+    INDEX idx_es_propietario (es_propietario),
+    FOREIGN KEY (comunidad_id) REFERENCES comunidades(id) ON DELETE SET NULL,
+    FOREIGN KEY (propiedad_id) REFERENCES propiedades(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
