@@ -9,6 +9,7 @@ class ReportesController {
     private Propiedad $propiedadModel;
     private Deuda $deudaModel;
     private Pago $pagoModel;
+    private SaldoMensual $saldoMensualModel;
     private PDO $db;
 
     public function __construct() {
@@ -16,6 +17,7 @@ class ReportesController {
         $this->propiedadModel = new Propiedad();
         $this->deudaModel = new Deuda();
         $this->pagoModel = new Pago();
+        $this->saldoMensualModel = new SaldoMensual();
         $this->db = getDB();
     }
 
@@ -238,8 +240,9 @@ class ReportesController {
         // Obtener total de pagos de gastos comunes del mes
         $totalIngresosGC = $this->getTotalPagosGastosComunes($mes, $anio);
         
-        // Obtener saldo del mes anterior
-        $saldoMesAnterior = $this->getSaldoMesAnterior($mes, $anio);
+        // Obtener saldo del mes anterior desde la tabla saldos_mensuales (igual que el Dashboard)
+        $resumenMesAnterior = $this->getResumenMesAnteriorDesdeSaldos($mes, $anio);
+        $saldoMesAnterior = $resumenMesAnterior['saldo_actual'];
         
         // Calcular saldo según fórmula: (pago gastos comunes + saldo mes anterior) - pago colaboradores
         $saldo = ($totalIngresosGC + $saldoMesAnterior) - $totalEgresos;
@@ -491,5 +494,55 @@ class ReportesController {
         
         $result = $stmt->fetch();
         return (float) ($result['total'] ?? 0);
+    }
+
+    /**
+     * Obtiene el resumen del mes anterior desde la tabla saldos_mensuales
+     * Similar al método getResumenFinancieroMensual del modelo SaldoMensual
+     * pero para el mes anterior al solicitado
+     * @param int $mes Mes actual (del cual queremos obtener el anterior)
+     * @param int $anio Año actual
+     * @return array ['saldo_actual' => float, 'saldo_anterior' => float, 'total_ingresos' => float, 'total_egresos' => float]
+     */
+    private function getResumenMesAnteriorDesdeSaldos(int $mes, int $anio): array {
+        // Calcular mes y año anterior
+        $mesAnterior = $mes - 1;
+        $anioAnterior = $anio;
+        
+        if ($mesAnterior < 1) {
+            $mesAnterior = 12;
+            $anioAnterior--;
+        }
+        
+        // Obtener resumen del mes anterior desde saldos_mensuales (igual que Dashboard)
+        $sql = "SELECT 
+                    COALESCE(SUM(saldo_final), 0) as saldo_actual,
+                    COALESCE(SUM(saldo_mes_anterior), 0) as saldo_anterior,
+                    COALESCE(SUM(total_ingresos_gc + ajustes_ingreso), 0) as total_ingresos,
+                    COALESCE(SUM(total_egresos_colaboradores + ajustes_egreso), 0) as total_egresos
+                FROM saldos_mensuales
+                WHERE mes = :mes AND anio = :anio";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':mes' => $mesAnterior, ':anio' => $anioAnterior]);
+        $resumen = $stmt->fetch();
+        
+        // Si no hay datos en saldos_mensuales, usar el método antiguo como fallback
+        if (!$resumen || ($resumen['saldo_actual'] == 0 && $resumen['total_ingresos'] == 0 && $resumen['total_egresos'] == 0)) {
+            $saldoCalculado = $this->getSaldoMesAnterior($mes, $anio);
+            return [
+                'saldo_actual' => $saldoCalculado,
+                'saldo_anterior' => 0,
+                'total_ingresos' => 0,
+                'total_egresos' => 0
+            ];
+        }
+        
+        return [
+            'saldo_actual' => (float) ($resumen['saldo_actual'] ?? 0),
+            'saldo_anterior' => (float) ($resumen['saldo_anterior'] ?? 0),
+            'total_ingresos' => (float) ($resumen['total_ingresos'] ?? 0),
+            'total_egresos' => (float) ($resumen['total_egresos'] ?? 0)
+        ];
     }
 }
