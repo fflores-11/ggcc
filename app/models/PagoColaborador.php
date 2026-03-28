@@ -123,4 +123,39 @@ class PagoColaborador extends Model {
             'errors' => $errors
         ];
     }
+
+    /**
+     * Obtiene todos los pagos con información del colaborador y usuario (paginado)
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getAllWithDetailsPaginated(int $offset, int $limit): array {
+        $sql = "SELECT pc.*, 
+                       c.nombre as colaborador_nombre,
+                       c.email as colaborador_email,
+                       c.whatsapp as colaborador_whatsapp,
+                       u.nombre as pagado_por_nombre
+                FROM {$this->table} pc
+                LEFT JOIN colaboradores c ON pc.colaborador_id = c.id
+                LEFT JOIN usuarios u ON pc.pagado_por = u.id
+                ORDER BY pc.fecha DESC, pc.id DESC
+                LIMIT :limit OFFSET :offset";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cuenta total de pagos a colaboradores
+     * @return int
+     */
+    public function countPagos(): int {
+        $sql = "SELECT COUNT(*) FROM {$this->table}";
+        $stmt = $this->db->query($sql);
+        return (int) $stmt->fetchColumn();
+    }
 }

@@ -106,4 +106,35 @@ class Comunidad extends Model {
     public function getForSelect(): array {
         return $this->getActive('nombre', 'ASC');
     }
+
+    /**
+     * Obtiene comunidades con conteo de propiedades (paginado)
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getWithPropertyCountPaginated(int $offset, int $limit): array {
+        $sql = "SELECT c.*, COUNT(p.id) as total_propiedades 
+                FROM {$this->table} c 
+                LEFT JOIN propiedades p ON c.id = p.comunidad_id AND p.activo = 1 
+                WHERE c.activo = 1 
+                GROUP BY c.id 
+                ORDER BY c.nombre ASC
+                LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cuenta el total de comunidades activas
+     * @return int
+     */
+    public function countActive(): int {
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE activo = 1";
+        $stmt = $this->db->query($sql);
+        return (int) $stmt->fetchColumn();
+    }
 }

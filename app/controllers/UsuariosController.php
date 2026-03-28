@@ -15,19 +15,27 @@ class UsuariosController {
      * Lista todos los usuarios
      */
     public function index(): void {
+        // Paginación
+        $pagination = getPaginationParams(20);
+        
         // Super admin ve todos los usuarios, administradores solo los de su comunidad
         if (getUserRole() === 'admin') {
-            $usuarios = $this->userModel->getAllWithComunidad();
+            $totalRecords = $this->userModel->countByComunidad();
+            $usuarios = $this->userModel->getAllWithComunidadPaginated($pagination['offset'], $pagination['perPage']);
         } else {
             $comunidadId = getUserComunidadId();
             if ($comunidadId) {
-                $usuarios = $this->userModel->getByComunidad($comunidadId);
+                $totalRecords = $this->userModel->countByComunidad($comunidadId);
+                $usuarios = $this->userModel->getByComunidadPaginated($comunidadId, $pagination['offset'], $pagination['perPage']);
             } else {
+                $totalRecords = 0;
                 $usuarios = [];
             }
         }
         
         $title = 'Mantenedor de Usuarios';
+        $currentPage = $pagination['page'];
+        $perPage = $pagination['perPage'];
         require_once VIEWS_PATH . '/usuarios/index.php';
     }
 

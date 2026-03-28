@@ -17,8 +17,14 @@ class ColaboradoresController {
      * Lista todos los colaboradores
      */
     public function index(): void {
-        $colaboradores = $this->colaboradorModel->getAllWithPagosCount();
+        // Paginación
+        $pagination = getPaginationParams(20);
+        $totalRecords = $this->colaboradorModel->countActive();
+        $colaboradores = $this->colaboradorModel->getAllWithPagosCountPaginated($pagination['offset'], $pagination['perPage']);
+        
         $title = 'Mantenedor de Colaboradores';
+        $currentPage = $pagination['page'];
+        $perPage = $pagination['perPage'];
         require_once VIEWS_PATH . '/colaboradores/index.php';
     }
 
@@ -251,11 +257,16 @@ class ColaboradoresController {
      * Lista todos los pagos a colaboradores
      */
     public function pagos(): void {
-        $pagos = $this->pagoColaboradorModel->getAllWithDetails();
+        // Paginación
+        $pagination = getPaginationParams(20);
+        $totalRecords = $this->pagoColaboradorModel->countPagos();
+        $pagos = $this->pagoColaboradorModel->getAllWithDetailsPaginated($pagination['offset'], $pagination['perPage']);
         $totalMesActual = $this->pagoColaboradorModel->getTotalMesActual();
         $colaboradores = $this->colaboradorModel->getForSelect();
         
         $title = 'Pagos a Colaboradores';
+        $currentPage = $pagination['page'];
+        $perPage = $pagination['perPage'];
         require_once VIEWS_PATH . '/colaboradores/pagos.php';
     }
 

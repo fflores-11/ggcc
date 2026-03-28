@@ -5,6 +5,11 @@
 
 $title = 'Listado de Pagos';
 require_once __DIR__ . '/../partials/header.php';
+
+// Paginación
+$totalRecords = $totalRecords ?? count($pagos);
+$currentPage = $currentPage ?? 1;
+$perPage = $perPage ?? 20;
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">

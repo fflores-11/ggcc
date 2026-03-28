@@ -17,8 +17,14 @@ class ComunidadesController {
      * Lista todas las comunidades
      */
     public function index(): void {
-        $comunidades = $this->comunidadModel->getWithPropertyCount();
+        // Paginación
+        $pagination = getPaginationParams(20);
+        $totalRecords = $this->comunidadModel->countActive();
+        $comunidades = $this->comunidadModel->getWithPropertyCountPaginated($pagination['offset'], $pagination['perPage']);
+        
         $title = 'Mantenedor de Comunidades';
+        $currentPage = $pagination['page'];
+        $perPage = $pagination['perPage'];
         require_once VIEWS_PATH . '/comunidades/index.php';
     }
 

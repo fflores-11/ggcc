@@ -1,5 +1,10 @@
 <?php 
 require_once VIEWS_PATH . '/partials/header.php';
+
+// Paginación
+$totalRecords = $totalRecords ?? count($usuarios);
+$currentPage = $currentPage ?? 1;
+$perPage = $perPage ?? 20;
 ?>
 
 <div class="container-fluid">
@@ -139,6 +144,12 @@ require_once VIEWS_PATH . '/partials/header.php';
         </div>
     </div>
 </div>
+
+<?php if ($totalRecords > $perPage): ?>
+<div class="mt-4">
+    <?= renderPagination($totalRecords, $currentPage, $perPage) ?>
+</div>
+<?php endif; ?>
 
 <?php 
 require_once VIEWS_PATH . '/partials/footer.php';

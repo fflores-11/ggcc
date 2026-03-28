@@ -283,3 +283,6 @@ function getYearList(int $startAgo = 2, int $endForward = 1): array {
     }
     return $years;
 }
+
+// Cargar helper de paginación
+require_once APP_PATH . '/helpers/PaginationHelper.php';

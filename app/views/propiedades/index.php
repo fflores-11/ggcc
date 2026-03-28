@@ -5,6 +5,11 @@
 
 $title = isset($comunidad) ? 'Propiedades: ' . $comunidad['nombre'] : 'Mantenedor de Propiedades';
 require_once __DIR__ . '/../partials/header.php';
+
+// Paginación
+$totalRecords = $totalRecords ?? count($propiedades);
+$currentPage = $currentPage ?? 1;
+$perPage = $perPage ?? 20;
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -127,5 +132,11 @@ require_once __DIR__ . '/../partials/header.php';
         </table>
     </div>
 </div>
+
+<?php if ($totalRecords > $perPage): ?>
+<div class="mt-4">
+    <?= renderPagination($totalRecords, $currentPage, $perPage) ?>
+</div>
+<?php endif; ?>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

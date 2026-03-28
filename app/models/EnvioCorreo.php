@@ -206,4 +206,37 @@ class EnvioCorreo extends Model {
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([':id' => $detalleId]);
     }
+
+    /**
+     * Obtiene todos los envíos con información de comunidad y usuario (paginado)
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getAllWithDetailsPaginated(int $offset, int $limit): array {
+        $sql = "SELECT e.*, 
+                       c.nombre as comunidad_nombre,
+                       u.nombre as enviado_por_nombre
+                FROM {$this->table} e
+                LEFT JOIN comunidades c ON e.comunidad_id = c.id
+                LEFT JOIN usuarios u ON e.enviado_por = u.id
+                ORDER BY e.created_at DESC
+                LIMIT :limit OFFSET :offset";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cuenta total de envíos
+     * @return int
+     */
+    public function countEnvios(): int {
+        $sql = "SELECT COUNT(*) FROM {$this->table}";
+        $stmt = $this->db->query($sql);
+        return (int) $stmt->fetchColumn();
+    }
 }

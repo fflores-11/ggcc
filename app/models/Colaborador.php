@@ -103,4 +103,38 @@ class Colaborador extends Model {
     public function getForSelect(): array {
         return $this->getActive('nombre', 'ASC');
     }
+
+    /**
+     * Obtiene colaboradores con conteo de pagos realizados (paginado)
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getAllWithPagosCountPaginated(int $offset, int $limit): array {
+        $sql = "SELECT c.*, 
+                       COUNT(pc.id) as total_pagos,
+                       COALESCE(SUM(pc.monto), 0) as total_pagado
+                FROM {$this->table} c
+                LEFT JOIN pagos_colaboradores pc ON c.id = pc.colaborador_id
+                WHERE c.activo = 1
+                GROUP BY c.id
+                ORDER BY c.nombre ASC
+                LIMIT :limit OFFSET :offset";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cuenta colaboradores activos
+     * @return int
+     */
+    public function countActive(): int {
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE activo = 1";
+        $stmt = $this->db->query($sql);
+        return (int) $stmt->fetchColumn();
+    }
 }

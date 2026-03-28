@@ -340,4 +340,63 @@ class Propiedad extends Model {
         
         return $this->update($propiedadId, $updateData);
     }
+
+    /**
+     * Obtiene propiedades de una comunidad específica (paginado)
+     * @param int $comunidadId
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getByComunidadPaginated(int $comunidadId, int $offset, int $limit): array {
+        $sql = "SELECT p.*, c.nombre as comunidad_nombre 
+                FROM {$this->table} p 
+                LEFT JOIN comunidades c ON p.comunidad_id = c.id 
+                WHERE p.comunidad_id = :comunidad_id AND p.activo = 1 
+                ORDER BY LENGTH(p.nombre), p.nombre
+                LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':comunidad_id', $comunidadId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene propiedades con información de comunidad (paginado)
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getAllWithComunidadPaginated(int $offset, int $limit): array {
+        $sql = "SELECT p.*, c.nombre as comunidad_nombre, c.direccion as comunidad_direccion
+                FROM {$this->table} p 
+                LEFT JOIN comunidades c ON p.comunidad_id = c.id 
+                WHERE p.activo = 1 
+                ORDER BY LENGTH(p.nombre), p.nombre
+                LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cuenta propiedades por comunidad
+     * @param int|null $comunidadId
+     * @return int
+     */
+    public function countByComunidad(?int $comunidadId = null): int {
+        if ($comunidadId) {
+            $sql = "SELECT COUNT(*) FROM {$this->table} WHERE comunidad_id = :comunidad_id AND activo = 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':comunidad_id' => $comunidadId]);
+        } else {
+            $sql = "SELECT COUNT(*) FROM {$this->table} WHERE activo = 1";
+            $stmt = $this->db->query($sql);
+        }
+        return (int) $stmt->fetchColumn();
+    }
 }

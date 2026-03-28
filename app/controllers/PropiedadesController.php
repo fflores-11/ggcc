@@ -23,16 +23,23 @@ class PropiedadesController {
     public function index(): void {
         $comunidadId = isset($_GET['comunidad_id']) ? (int) $_GET['comunidad_id'] : null;
         
+        // Paginación
+        $pagination = getPaginationParams(20);
+        
         if ($comunidadId) {
-            $propiedades = $this->propiedadModel->getByComunidad($comunidadId);
+            $totalRecords = $this->propiedadModel->countByComunidad($comunidadId);
+            $propiedades = $this->propiedadModel->getByComunidadPaginated($comunidadId, $pagination['offset'], $pagination['perPage']);
             $comunidad = $this->comunidadModel->find($comunidadId);
             $title = 'Propiedades de ' . ($comunidad['nombre'] ?? 'Comunidad');
         } else {
-            $propiedades = $this->propiedadModel->getAllWithComunidad();
+            $totalRecords = $this->propiedadModel->countByComunidad();
+            $propiedades = $this->propiedadModel->getAllWithComunidadPaginated($pagination['offset'], $pagination['perPage']);
             $title = 'Mantenedor de Propiedades';
         }
         
         $comunidades = $this->comunidadModel->getForSelect();
+        $currentPage = $pagination['page'];
+        $perPage = $pagination['perPage'];
         require_once VIEWS_PATH . '/propiedades/index.php';
     }
 

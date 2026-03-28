@@ -25,10 +25,15 @@ class CorreosController {
      * Lista todos los envíos de correo
      */
     public function index(): void {
-        $envios = $this->envioModel->getAllWithDetails();
+        // Paginación
+        $pagination = getPaginationParams(20);
+        $totalRecords = $this->envioModel->countEnvios();
+        $envios = $this->envioModel->getAllWithDetailsPaginated($pagination['offset'], $pagination['perPage']);
         $comunidades = $this->comunidadModel->getForSelect();
         
         $title = 'Envío de Correos';
+        $currentPage = $pagination['page'];
+        $perPage = $pagination['perPage'];
         require_once VIEWS_PATH . '/correos/index.php';
     }
 

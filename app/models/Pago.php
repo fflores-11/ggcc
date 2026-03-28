@@ -370,4 +370,80 @@ class Pago extends Model {
             'recibo_path' => $path
         ]);
     }
+
+    /**
+     * Obtiene todos los pagos con información de propiedad y comunidad (paginado)
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getAllWithDetailsPaginated(int $offset, int $limit): array {
+        $sql = "SELECT p.*, 
+                       pr.nombre as propiedad_nombre, 
+                       pr.nombre_dueno,
+                       c.nombre as comunidad_nombre,
+                       GROUP_CONCAT(DISTINCT CONCAT(d.mes, '-', d.anio) ORDER BY d.anio DESC, d.mes DESC SEPARATOR ', ') as meses_pagados
+                FROM {$this->table} p
+                LEFT JOIN propiedades pr ON p.propiedad_id = pr.id
+                LEFT JOIN comunidades c ON pr.comunidad_id = c.id
+                LEFT JOIN pagos_detalle pd ON p.id = pd.pago_id
+                LEFT JOIN deudas d ON pd.deuda_id = d.id
+                GROUP BY p.id
+                ORDER BY p.fecha DESC, p.id DESC
+                LIMIT :limit OFFSET :offset";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene pagos por comunidad (paginado)
+     * @param int $comunidadId
+     * @param int $offset
+     * @param int $limit
+     * @return array
+     */
+    public function getByComunidadPaginated(int $comunidadId, int $offset, int $limit): array {
+        $sql = "SELECT p.*, 
+                       pr.nombre as propiedad_nombre, 
+                       pr.nombre_dueno,
+                       GROUP_CONCAT(DISTINCT CONCAT(d.mes, '-', d.anio) ORDER BY d.anio DESC, d.mes DESC SEPARATOR ', ') as meses_pagados
+                FROM {$this->table} p
+                LEFT JOIN propiedades pr ON p.propiedad_id = pr.id
+                LEFT JOIN pagos_detalle pd ON p.id = pd.pago_id
+                LEFT JOIN deudas d ON pd.deuda_id = d.id
+                WHERE pr.comunidad_id = :comunidad_id
+                GROUP BY p.id
+                ORDER BY p.fecha DESC
+                LIMIT :limit OFFSET :offset";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':comunidad_id', $comunidadId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cuenta total de pagos
+     * @param int|null $comunidadId
+     * @return int
+     */
+    public function countPagos(?int $comunidadId = null): int {
+        if ($comunidadId) {
+            $sql = "SELECT COUNT(*) FROM {$this->table} p
+                    LEFT JOIN propiedades pr ON p.propiedad_id = pr.id
+                    WHERE pr.comunidad_id = :comunidad_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':comunidad_id' => $comunidadId]);
+        } else {
+            $sql = "SELECT COUNT(*) FROM {$this->table}";
+            $stmt = $this->db->query($sql);
+        }
+        return (int) $stmt->fetchColumn();
+    }
 }

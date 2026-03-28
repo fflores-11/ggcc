@@ -33,15 +33,22 @@ class UsuariosPropiedadController {
             redirect('dashboard.php');
         }
 
+        // Paginación
+        $pagination = getPaginationParams(20);
+
         // Obtener usuarios según rol
         if (getUserRole() === 'admin') {
-            $usuarios = $this->userModel->getUsuariosPropietarios();
+            $totalRecords = $this->userModel->countUsuariosPropietarios();
+            $usuarios = $this->userModel->getUsuariosPropietariosPaginated(null, $pagination['offset'], $pagination['perPage']);
         } else {
             $comunidadId = getUserComunidadId();
-            $usuarios = $this->userModel->getUsuariosPropietarios($comunidadId);
+            $totalRecords = $this->userModel->countUsuariosPropietarios($comunidadId);
+            $usuarios = $this->userModel->getUsuariosPropietariosPaginated($comunidadId, $pagination['offset'], $pagination['perPage']);
         }
 
         $title = 'Usuarios por Propiedad';
+        $currentPage = $pagination['page'];
+        $perPage = $pagination['perPage'];
         require_once VIEWS_PATH . '/usuarios_propiedad/index.php';
     }
 
