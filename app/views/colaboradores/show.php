@@ -133,7 +133,7 @@ require_once __DIR__ . '/../partials/header.php';
                 <h5 class="mb-0">Historial de Pagos</h5>
                 <span class="badge bg-info"><?= count($pagos) ?> pagos</span>
             </div>
-            <div class="table-body">
+                <div class="table-body">
                 <?php if (empty($pagos)): ?>
                     <div class="text-center text-muted py-5">
                         <i class="bi bi-cash-stack display-4 mb-3"></i>
@@ -148,6 +148,7 @@ require_once __DIR__ . '/../partials/header.php';
                             <tr>
                                 <th>Fecha</th>
                                 <th>Detalle</th>
+                                <th class="text-center">Boleta</th>
                                 <th class="text-end">Monto</th>
                                 <th>Registrado por</th>
                                 <th class="text-center">Acciones</th>
@@ -158,9 +159,27 @@ require_once __DIR__ . '/../partials/header.php';
                                 <tr>
                                     <td><?= formatDate($pago['fecha']) ?></td>
                                     <td><?= e($pago['detalle']) ?></td>
+                                    <td class="text-center">
+                                        <?php if (!empty($pago['imagen_path'])): ?>
+                                            <a href="colaboradores.php?action=verImagen&id=<?= $pago['id'] ?>" 
+                                               class="badge bg-success text-decoration-none" title="Ver boleta">
+                                                <i class="bi bi-paperclip"></i> Ver
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-x-circle"></i> No
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-end fw-bold"><?= formatMoney((float)$pago['monto']) ?></td>
                                     <td><?= e($pago['pagado_por_nombre']) ?></td>
                                     <td class="text-center">
+                                        <?php if (!empty($pago['imagen_path'])): ?>
+                                            <a href="colaboradores.php?action=verImagen&id=<?= $pago['id'] ?>" 
+                                               class="btn btn-sm btn-outline-primary me-1" title="Ver Boleta">
+                                                <i class="bi bi-image"></i>
+                                            </a>
+                                        <?php endif; ?>
                                         <a href="colaboradores.php?action=deletePago&id=<?= $pago['id'] ?>" 
                                            class="btn btn-sm btn-outline-danger" 
                                            title="Eliminar Pago"
@@ -173,7 +192,7 @@ require_once __DIR__ . '/../partials/header.php';
                         </tbody>
                         <tfoot class="table-primary">
                             <tr>
-                                <td colspan="2" class="text-end fw-bold fs-5">TOTAL PAGADO:</td>
+                                <td colspan="3" class="text-end fw-bold fs-5">TOTAL PAGADO:</td>
                                 <td colspan="3" class="fw-bold fs-4"><?= formatMoney($totalPagado) ?></td>
                             </tr>
                         </tfoot>

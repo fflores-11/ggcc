@@ -32,6 +32,8 @@ $regiones = [
 ];
 
 $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
+$esPersonal = $tipoActual === 'personal';
+$esEmpresa = $tipoActual === 'empresa';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -56,21 +58,22 @@ $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
                 <div class="mb-4">
                     <div class="btn-group" role="group">
                         <input type="radio" class="btn-check" name="tipo_colaborador" id="tipo_personal" value="personal" 
-                               <?= $tipoActual === 'personal' ? 'checked' : '' ?> onchange="toggleTipoColaborador()">
-                        <label class="btn btn-outline-primary" for="tipo_personal">
+                               <?= $esPersonal ? 'checked' : '' ?> onchange="window.location.href='<?= $isEdit ? 'colaboradores.php?action=edit&id=' . $colaborador['id'] . '&tipo=personal' : 'colaboradores.php?action=create&tipo=personal' ?>'">
+                        <label class="btn btn-outline-primary <?= $esPersonal ? 'active' : '' ?>" for="tipo_personal">
                             <i class="bi bi-person me-2"></i>Personal
                         </label>
                         
                         <input type="radio" class="btn-check" name="tipo_colaborador" id="tipo_empresa" value="empresa" 
-                               <?= $tipoActual === 'empresa' ? 'checked' : '' ?> onchange="toggleTipoColaborador()">
-                        <label class="btn btn-outline-primary" for="tipo_empresa">
+                               <?= $esEmpresa ? 'checked' : '' ?> onchange="window.location.href='<?= $isEdit ? 'colaboradores.php?action=edit&id=' . $colaborador['id'] . '&tipo=empresa' : 'colaboradores.php?action=create&tipo=empresa' ?>'">
+                        <label class="btn btn-outline-primary <?= $esEmpresa ? 'active' : '' ?>" for="tipo_empresa">
                             <i class="bi bi-building me-2"></i>Empresa
                         </label>
                     </div>
                 </div>
 
+                <?php if ($esEmpresa): ?>
                 <!-- Campos para EMPRESA -->
-                <div id="campos_empresa" style="display: <?= $tipoActual === 'empresa' ? 'block' : 'none' ?>;">
+                <div id="campos_empresa">
                     <h6 class="mb-3 text-primary">Información de la Empresa</h6>
                     
                     <div class="mb-3">
@@ -87,22 +90,24 @@ $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
                                placeholder="Ej: CLI-001234">
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if ($esPersonal): ?>
                 <!-- Campos para PERSONAL -->
-                <div id="campos_personal" style="display: <?= $tipoActual === 'personal' ? 'block' : 'none' ?>;">
+                <div id="campos_personal">
                     <h6 class="mb-3 text-primary">Información Personal</h6>
                     
                     <div class="mb-3">
                         <label class="form-label">Nombre Completo <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="nombre_personal"
-                               value="<?= $tipoActual === 'personal' ? e($colaborador['nombre']) : '' ?>" 
+                        <input type="text" class="form-control" name="nombre_personal" required
+                               value="<?= e($colaborador['nombre']) ?>" 
                                placeholder="Nombre del colaborador">
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" name="email"
+                            <input type="email" class="form-control" name="email" required
                                    value="<?= e($colaborador['email']) ?>" 
                                    placeholder="correo@ejemplo.com">
                         </div>
@@ -119,14 +124,14 @@ $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
 
                     <div class="mb-3">
                         <label class="form-label">Dirección <span class="text-danger">*</span></label>
-                        <textarea class="form-control" name="direccion" rows="2"
+                        <textarea class="form-control" name="direccion" rows="2" required
                                   placeholder="Dirección completa"><?= e($colaborador['direccion']) ?></textarea>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Región <span class="text-danger">*</span></label>
-                            <select class="form-select" name="region">
+                            <select class="form-select" name="region" required>
                                 <option value="">Seleccione...</option>
                                 <?php foreach ($regiones as $region): ?>
                                     <option value="<?= $region ?>" <?= $colaborador['region'] === $region ? 'selected' : '' ?>>
@@ -137,7 +142,7 @@ $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Comuna <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="comuna"
+                            <input type="text" class="form-control" name="comuna" required
                                    value="<?= e($colaborador['comuna']) ?>" 
                                    placeholder="Ej: Las Condes">
                         </div>
@@ -169,6 +174,7 @@ $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
                                placeholder="Ej: 1234567890">
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <?php if ($isEdit): ?>
                     <hr class="my-4">
@@ -199,6 +205,7 @@ $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
                 Los colaboradores son personas o empresas que prestan servicios a las comunidades y reciben pagos del sistema.
             </p>
             
+            <?php if ($esPersonal): ?>
             <div id="info_personal">
                 <h6 class="mb-2">Personal - Campos obligatorios:</h6>
                 <ul class="list-unstyled text-muted">
@@ -215,62 +222,19 @@ $tipoActual = $colaborador['tipo_colaborador'] ?? 'personal';
                     <li class="mb-1"><i class="bi bi-circle text-info me-2"></i>Datos bancarios</li>
                 </ul>
             </div>
+            <?php endif; ?>
             
-            <div id="info_empresa" style="display: none;">
+            <?php if ($esEmpresa): ?>
+            <div id="info_empresa">
                 <h6 class="mb-2">Empresa - Campos obligatorios:</h6>
                 <ul class="list-unstyled text-muted">
                     <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Nombre de la empresa</li>
                     <li class="mb-1"><i class="bi bi-check text-success me-2"></i>Número de cliente</li>
                 </ul>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
-
-<script>
-function toggleTipoColaborador() {
-    const tipoPersonal = document.getElementById('tipo_personal').checked;
-    const camposPersonal = document.getElementById('campos_personal');
-    const camposEmpresa = document.getElementById('campos_empresa');
-    const infoPersonal = document.getElementById('info_personal');
-    const infoEmpresa = document.getElementById('info_empresa');
-    
-    // Campos del formulario
-    camposPersonal.style.display = tipoPersonal ? 'block' : 'none';
-    camposEmpresa.style.display = tipoPersonal ? 'none' : 'block';
-    
-    // Info sidebar
-    infoPersonal.style.display = tipoPersonal ? 'block' : 'none';
-    infoEmpresa.style.display = tipoPersonal ? 'none' : 'block';
-    
-    // Actualizar required attributes
-    const personalInputs = camposPersonal.querySelectorAll('input, textarea, select');
-    const empresaInputs = camposEmpresa.querySelectorAll('input');
-    
-    personalInputs.forEach(input => {
-        if (tipoPersonal) {
-            if (input.name === 'nombre_personal' || input.name === 'email' || 
-                input.name === 'direccion' || input.name === 'region' || input.name === 'comuna') {
-                input.setAttribute('required', 'required');
-            }
-        } else {
-            input.removeAttribute('required');
-        }
-    });
-    
-    empresaInputs.forEach(input => {
-        if (!tipoPersonal) {
-            if (input.name === 'nombre' || input.name === 'numero_cliente') {
-                input.setAttribute('required', 'required');
-            }
-        } else {
-            input.removeAttribute('required');
-        }
-    });
-}
-
-// Inicializar al cargar
-document.addEventListener('DOMContentLoaded', toggleTipoColaborador);
-</script>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

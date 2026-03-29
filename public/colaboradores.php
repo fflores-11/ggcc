@@ -4,10 +4,27 @@
  */
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
-requireAuth();
+
+$action = $_GET['action'] ?? 'index';
+
+// Permitir acceso sin autenticación para generarReciboPDF con token válido
+if ($action === 'generarReciboPDF') {
+    // Verificar token de acceso para el PDF
+    $token = $_GET['token'] ?? '';
+    $id = (int) ($_GET['id'] ?? 0);
+    
+    // Generar token esperado
+    $expectedToken = hash('sha256', 'recibo_' . $id . '_ggcc_2024');
+    
+    if ($token !== $expectedToken) {
+        // Token inválido, requerir autenticación normal
+        requireAuth();
+    }
+} else {
+    requireAuth();
+}
 
 $controller = new ColaboradoresController();
-$action = $_GET['action'] ?? 'index';
 
 switch ($action) {
     case 'index':
@@ -53,5 +70,25 @@ switch ($action) {
         
     case 'deletePago':
         $controller->deletePago();
+        break;
+        
+    case 'editPago':
+        $controller->editPago();
+        break;
+        
+    case 'updatePago':
+        $controller->updatePago();
+        break;
+        
+    case 'generarReciboPDF':
+        $controller->generarReciboPDF();
+        break;
+        
+    case 'verImagen':
+        $controller->verImagen();
+        break;
+        
+    case 'eliminarImagen':
+        $controller->eliminarImagen();
         break;
 }

@@ -35,6 +35,7 @@ $perPage = $perPage ?? 20;
                     <th>Fecha</th>
                     <th>Colaborador</th>
                     <th>Detalle</th>
+                    <th class="text-center">Boleta</th>
                     <th class="text-end">Monto</th>
                     <th>Registrado por</th>
                     <th class="text-center">Acciones</th>
@@ -57,21 +58,49 @@ $perPage = $perPage ?? 20;
                                 <small class="text-muted"><?= e($pago['colaborador_email']) ?></small>
                             </td>
                             <td><?= e($pago['detalle']) ?></td>
+                            <td class="text-center">
+                                <?php if (!empty($pago['imagen_path'])): ?>
+                                    <span class="badge bg-success" title="Boleta adjunta">
+                                        <i class="bi bi-paperclip"></i> Sí
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary" title="Sin boleta">
+                                        <i class="bi bi-x-circle"></i> No
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-end fw-bold text-primary">
                                 <?= formatMoney((float)$pago['monto']) ?>
                             </td>
                             <td><?= e($pago['pagado_por_nombre']) ?></td>
                             <td class="text-center">
-                                <a href="colaboradores.php?action=show&id=<?= $pago['colaborador_id'] ?>" 
-                                   class="btn btn-sm btn-outline-info me-1" title="Ver Colaborador">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="colaboradores.php?action=deletePago&id=<?= $pago['id'] ?>" 
-                                   class="btn btn-sm btn-outline-danger" 
-                                   title="Eliminar Pago"
-                                   onclick="return confirm('¿Está seguro de eliminar este pago?')">
-                                    <i class="bi bi-trash"></i>
-                                </a>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="colaboradores.php?action=editPago&id=<?= $pago['id'] ?>" 
+                                       class="btn btn-outline-primary" title="Editar Pago">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="colaboradores.php?action=generarReciboPDF&id=<?= $pago['id'] ?>" 
+                                       class="btn btn-outline-success" title="Descargar Recibo PDF"
+                                       target="_blank">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                    <?php if (!empty($pago['imagen_path'])): ?>
+                                        <a href="colaboradores.php?action=verImagen&id=<?= $pago['id'] ?>" 
+                                           class="btn btn-outline-info" title="Ver Boleta/Recibo">
+                                            <i class="bi bi-image"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    <a href="colaboradores.php?action=show&id=<?= $pago['colaborador_id'] ?>" 
+                                       class="btn btn-outline-secondary" title="Ver Colaborador">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="colaboradores.php?action=deletePago&id=<?= $pago['id'] ?>" 
+                                       class="btn btn-outline-danger" 
+                                       title="Eliminar Pago"
+                                       onclick="return confirm('¿Está seguro de eliminar este pago?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

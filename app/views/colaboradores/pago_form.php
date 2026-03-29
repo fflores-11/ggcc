@@ -17,7 +17,7 @@ require_once __DIR__ . '/../partials/header.php';
 <div class="row">
     <div class="col-lg-8">
         <div class="form-section">
-            <form action="colaboradores.php?action=storePago" method="POST">
+            <form action="colaboradores.php?action=storePago" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
 
                 <div class="mb-4">
@@ -62,6 +62,18 @@ require_once __DIR__ . '/../partials/header.php';
                         <label class="form-label">Fecha <span class="text-danger">*</span></label>
                         <input type="date" name="fecha" class="form-control form-control-lg" 
                                required value="<?= date('Y-m-d') ?>">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">
+                        <i class="bi bi-image me-2"></i>Boleta/Recibo del Pago
+                    </label>
+                    <input type="file" name="imagen" class="form-control" 
+                           accept="image/jpeg,image/png,image/gif,application/pdf">
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Adjunte una imagen o PDF de la boleta/recibo (JPEG, PNG, GIF o PDF - Máx. 5MB)
                     </div>
                 </div>
 
