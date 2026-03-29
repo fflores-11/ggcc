@@ -4,7 +4,107 @@ Todos los cambios notables en el proyecto Sistema de Gestión de Gastos Comunes 
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
-## [Unreleased] - 2026-03-15
+## [Unreleased] - 2026-03-29
+
+### ✨ Nuevas Funcionalidades
+
+#### Paginación en Mantenedores
+- **Paginación automática en todos los listados**
+  - 20 registros por página (configurable)
+  - Botones "Anterior" y "Siguiente" con iconos
+  - Navegación numérica con rangos (muestra 5 páginas alrededor de la actual)
+  - Elipsis (...) para páginas lejanas
+  - Información de registros mostrados: "Mostrando X - Y de Z registros"
+  - Preserva otros parámetros GET al navegar
+  - Diseño con Bootstrap 5 y Bootstrap Icons
+  - Solo se muestra si hay más de 20 registros
+  - **Módulos con paginación:**
+    - Comunidades
+    - Propiedades
+    - Usuarios
+    - Colaboradores
+    - Pagos a colaboradores
+    - Pagos de propiedades
+    - Usuarios por propiedad
+    - Envíos de correo
+  - Archivo helper creado: `app/helpers/PaginationHelper.php`
+
+#### Sistema de Pagos a Colaboradores - Mejoras Completas
+- **Campo para imagen de boleta/recibo**
+  - Nueva columna `imagen_path` en tabla `pagos_colaboradores`
+  - Soporte para formatos: JPEG, PNG, GIF, PDF
+  - Tamaño máximo: 5MB
+  - Subida opcional al registrar pago
+  - Visualización de indicador "Sí/No" en listado
+  - Vista previa de boleta en detalle del pago
+  - Eliminación de imagen al borrar el pago
+  - Reemplazo de imagen al editar pago
+  - Archivo de migración: `config/migration_pagos_colaboradores_imagen.sql`
+
+- **Botones de acción en listado de pagos**
+  - Botón "Editar" - Permite modificar todos los datos del pago
+  - Botón "PDF" - Descarga el recibo en PDF
+  - Botón "Ver Boleta" - Visualiza la imagen adjunta (si existe)
+  - Botón "Ver Colaborador" - Navega al detalle del colaborador
+  - Botón "Eliminar" - Elimina el pago con confirmación
+  - Todos los botones en un grupo compacto
+
+- **Recibo PDF profesional**
+  - Número de recibo único (RCB-XXXXXX-YYYY)
+  - Datos completos del colaborador (nombre, email, teléfono)
+  - Detalle del pago y monto formateado
+  - Tipo de colaborador (Personal/Empresa)
+  - Código QR en esquina superior izquierda
+  - Firma digital del administrador (si está configurada)
+  - Espacio para firma del colaborador
+  - Todo en una sola página A4
+  - Generado con DomPDF v3.1.5
+
+- **Código QR con acceso directo**
+  - QR apunta directamente al PDF del recibo
+  - Token de seguridad incluido en la URL
+  - Permite descargar el PDF sin iniciar sesión
+  - API gratuita: qrserver.com
+  - Tamaño: 120x120 píxeles
+  - Acceso público mediante token hash SHA256
+
+- **Vistas y controladores actualizados**
+  - `ColaboradoresController::editPago()` - Formulario de edición
+  - `ColaboradoresController::updatePago()` - Procesar actualización
+  - `ColaboradoresController::generarReciboPDF()` - Generar PDF
+  - `app/views/colaboradores/edit_pago.php` - Nueva vista de edición
+  - `app/views/colaboradores/pagos.php` - Botones de acción agregados
+  - `app/views/colaboradores/show.php` - Indicador de boleta en historial
+
+#### Correcciones en Formulario de Colaboradores
+- **Formulario de edición funcional**
+  - Corrección del campo "Nombre Completo" (faltaba atributo `required`)
+  - Eliminación de dependencia excesiva de JavaScript
+  - Campos se muestran/ocultan usando PHP puro
+  - Botones de tipo (Personal/Empresa) recargan página con tipo seleccionado
+  - Funcionamiento estable en todos los navegadores
+
+### 🔧 Mejoras Técnicas
+- Modelo `PagoColaborador` extendido con métodos:
+  - `getWithImagen()` - Obtener pago con datos de imagen
+  - `updateImagenPath()` - Actualizar ruta de imagen
+  - `getImagenPath()` - Obtener ruta de imagen
+  - `deleteImagen()` - Eliminar referencia de imagen
+  - `getAllWithDetailsPaginated()` - Listado paginado con detalles
+  - `countPagos()` - Contar total de pagos
+
+### 🗄️ Migraciones de Base de Datos
+- **Nueva migración:** `config/migration_pagos_colaboradores_imagen.sql`
+  - Agrega columna `imagen_path VARCHAR(255)` a tabla `pagos_colaboradores`
+  - Crea índice para búsquedas rápidas
+
+### 📊 Estadísticas Actualizadas
+- **Total de archivos PHP:** 58
+- **Total de líneas de código:** ~9,500
+- **Archivos nuevos:** 3 (PaginationHelper, migration, vista edit_pago)
+- **Módulos mejorados:** Pagos a Colaboradores
+
+### Versión [Unreleased] - 2026-03-15
 
 ### ✨ Nuevas Funcionalidades
 
