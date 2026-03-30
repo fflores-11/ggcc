@@ -39,11 +39,11 @@ class UsuariosPropiedadController {
         // Obtener usuarios según rol
         if (getUserRole() === 'admin') {
             $totalRecords = $this->userModel->countUsuariosPropietarios();
-            $usuarios = $this->userModel->getUsuariosPropietariosPaginated(null, $pagination['offset'], $pagination['perPage']);
+            $usuarios = $this->userModel->getUsuariosPropietariosPaginated($pagination['offset'], $pagination['perPage']);
         } else {
             $comunidadId = getUserComunidadId();
             $totalRecords = $this->userModel->countUsuariosPropietarios($comunidadId);
-            $usuarios = $this->userModel->getUsuariosPropietariosPaginated($comunidadId, $pagination['offset'], $pagination['perPage']);
+            $usuarios = $this->userModel->getUsuariosPropietariosPaginated($pagination['offset'], $pagination['perPage'], $comunidadId);
         }
 
         $title = 'Usuarios por Propiedad';

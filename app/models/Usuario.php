@@ -638,7 +638,7 @@ class Usuario extends Model {
      * @param bool $soloActivos
      * @return array
      */
-    public function getUsuariosPropietariosPaginated(?int $comunidadId = null, int $offset, int $limit, bool $soloActivos = true): array {
+    public function getUsuariosPropietariosPaginated(int $offset, int $limit, ?int $comunidadId = null, bool $soloActivos = true): array {
         $sql = "SELECT u.*, p.nombre as propiedad_nombre, p.nombre_dueno, 
                        p.email_dueno, p.whatsapp_dueno, c.nombre as comunidad_nombre
                 FROM {$this->table} u
