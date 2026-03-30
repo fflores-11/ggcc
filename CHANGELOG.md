@@ -76,6 +76,29 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - `app/views/colaboradores/pagos.php` - Botones de acción agregados
   - `app/views/colaboradores/show.php` - Indicador de boleta en historial
 
+#### Lógica de Ingresos Unificada - Registro por Fecha de Pago
+- **Principio fundamental: Los ingresos se registran en el mes que se reciben**
+  - Todos los pagos recibidos en un mes se suman como ingresos de ese mes
+  - Independientemente de qué meses de deuda se estén pagando
+  - Ejemplo: Si en marzo se reciben 40.000 de marzo + 60.000 de deudas de enero = Total ingresos de marzo: 100.000
+
+- **Unificación de cálculos en Dashboard y Reportes**
+  - DashboardController ahora usa el mismo método que ReportesController para obtener saldo anterior
+  - Ambos calculan ingresos con: `SELECT SUM(monto) FROM pagos WHERE MONTH(fecha) = :mes AND YEAR(fecha) = :anio`
+  - Fórmula unificada: `saldo_mes_anterior + ingresos_mes_actual - egresos_mes_actual`
+  - Elimina inconsistencias entre Dashboard y Reportes
+
+- **Diferenciación clara entre módulos**
+  - **Dashboard y Reportes**: Muestran ingresos por fecha de pago (cuándo entró el dinero)
+  - **Consolidado (Matriz)**: Muestra en qué mes se pagó cada deuda (histórico de pagos por período)
+  - **Saldo Mensual**: Acumulación mensual del saldo con cierre de períodos
+
+- **Archivos modificados**
+  - `app/controllers/DashboardController.php` - Unificado cálculo de ingresos y saldo anterior
+  - `app/controllers/ReportesController.php` - Misma lógica verificada y confirmada
+  - `app/models/Dashboard.php` - Estadísticas mensuales con misma consulta SQL
+  - `app/models/SaldoMensual.php` - Cálculo de ingresos con misma lógica
+
 #### Correcciones en Formulario de Colaboradores
 - **Formulario de edición funcional**
   - Corrección del campo "Nombre Completo" (faltaba atributo `required`)
