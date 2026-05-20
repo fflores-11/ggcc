@@ -62,8 +62,61 @@ require_once __DIR__ . '/../partials/header.php';
     </div>
 
     <!-- Matriz de Pagos -->
+    <style>
+        .consolidado-wrapper {
+            overflow: auto;
+            max-height: 70vh;
+            position: relative;
+        }
+        .consolidado-wrapper table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .consolidado-wrapper thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #212529 !important;
+            color: #fff !important;
+            box-shadow: 0 2px 2px -1px rgba(0,0,0,0.4);
+        }
+        .consolidado-wrapper tbody td:first-child,
+        .consolidado-wrapper thead th:first-child,
+        .consolidado-wrapper tfoot td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 30;
+            background-color: #fff;
+            min-width: 250px;
+            box-shadow: 2px 0 2px -1px rgba(0,0,0,0.4);
+        }
+        .consolidado-wrapper thead th:first-child {
+            z-index: 40;
+            background-color: #212529 !important;
+            color: #fff !important;
+        }
+        .consolidado-wrapper tfoot td:first-child {
+            z-index: 30;
+            background-color: #cfe2ff !important;
+        }
+        .consolidado-wrapper tbody td:first-child {
+            background-color: #fff;
+        }
+        .consolidado-wrapper tbody tr:hover td:first-child {
+            background-color: #e9ecef;
+        }
+        .consolidado-wrapper tfoot {
+            position: sticky;
+            bottom: 0;
+            z-index: 20;
+        }
+        .consolidado-wrapper tfoot td {
+            background-color: #cfe2ff !important;
+            box-shadow: 0 -2px 2px -1px rgba(0,0,0,0.4);
+        }
+    </style>
     <div class="table-container">
-        <div class="table-body" style="overflow-x: auto;">
+        <div class="consolidado-wrapper">
             <table class="table table-bordered table-hover mb-0" style="min-width: 800px;">
                 <thead class="table-dark">
                     <tr>
