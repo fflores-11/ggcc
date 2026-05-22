@@ -409,9 +409,9 @@ class ConsolidadosController {
                     $estado = $fila['meses'][$mes]['estado'];
                     $monto = $fila['meses'][$mes]['monto'];
                     if ($estado === 'Pagado') {
-                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #d4edda; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #28a745; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 12px; margin-bottom: 3px;">OK</div><br><small>$' . number_format($monto, 0, ',', '.') . '</small></td>';
+                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #d4edda; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #28a745; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 12px;">OK</div></td>';
                     } else {
-                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #fff3cd; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #dc3545; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 12px; margin-bottom: 3px;">X</div><br><small>$' . number_format($monto, 0, ',', '.') . '</small></td>';
+                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #fff3cd; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #dc3545; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 12px;">X</div></td>';
                     }
                 } else {
                     $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; color: #adb5bd; font-size: 10px;">-</td>';
@@ -430,8 +430,8 @@ class ConsolidadosController {
             if (isset($totales['totales'][$mes])) {
                 $mesTotal = $totales['totales'][$mes];
                 $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; font-size: 9px;">';
-                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #28a745; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 8px;">OK</div> <span style="color: #155724;">$' . number_format($mesTotal['pagado'], 0, ',', '.') . '</span><br>';
-                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #dc3545; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 8px;">X</div> <span style="color: #721c24;">$' . number_format($mesTotal['pendiente'], 0, ',', '.') . '</span>';
+                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #28a745; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 8px;">OK</div> <span style="color: #155724; font-weight: bold;">' . number_format($mesTotal['pagado'], 0, ',', '.') . '</span><br>';
+                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #dc3545; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 8px;">X</div> <span style="color: #721c24; font-weight: bold;">' . number_format($mesTotal['pendiente'], 0, ',', '.') . '</span>';
                 $totalsHTML .= '</td>';
             } else {
                 $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; font-size: 10px;">-</td>';
