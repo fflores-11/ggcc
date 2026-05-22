@@ -18,4 +18,8 @@ switch ($action) {
     case 'exportar':
         $controller->exportar();
         break;
+        
+    case 'exportarPDF':
+        $controller->exportarPDF();
+        break;
 }

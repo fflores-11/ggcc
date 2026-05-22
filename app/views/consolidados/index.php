@@ -10,9 +10,14 @@ require_once __DIR__ . '/../partials/header.php';
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>Consolidado de Pagos</h4>
     <?php if ($comunidadId): ?>
-    <a href="consolidados.php?action=exportar&comunidad_id=<?= $comunidadId ?>&anio=<?= $anio ?>" class="btn btn-success">
-        <i class="bi bi-file-earmark-excel me-2"></i>Exportar a Excel
-    </a>
+    <div class="d-flex gap-2">
+        <a href="consolidados.php?action=exportar&comunidad_id=<?= $comunidadId ?>&anio=<?= $anio ?>" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel me-2"></i>Exportar a Excel
+        </a>
+        <a href="consolidados.php?action=exportarPDF&comunidad_id=<?= $comunidadId ?>&anio=<?= $anio ?>" class="btn btn-danger" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Exportar a PDF
+        </a>
+    </div>
     <?php endif; ?>
 </div>
 
