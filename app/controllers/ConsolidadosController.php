@@ -313,7 +313,7 @@ class ConsolidadosController {
                     $estado = $fila['meses'][$mes]['estado'];
                     $monto = $fila['meses'][$mes]['monto'];
                     // ✓ para pagado, P para pendiente + monto como número limpio
-                    $row[] = $estado === 'Pagado' ? "✓ {$monto}" : "P {$monto}";
+                    $row[] = $estado === 'Pagado' ? "OK {$monto}" : "P {$monto}";
                 } else {
                     $row[] = '-';
                 }
@@ -409,7 +409,7 @@ class ConsolidadosController {
                     $estado = $fila['meses'][$mes]['estado'];
                     $monto = $fila['meses'][$mes]['monto'];
                     if ($estado === 'Pagado') {
-                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #d4edda; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #28a745; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 14px; margin-bottom: 3px;">✓</div><br><small>$' . number_format($monto, 0, ',', '.') . '</small></td>';
+                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #d4edda; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #28a745; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 14px; margin-bottom: 3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-top: -2px;"><polyline points="20 6 9 17 4 12"></polyline></svg></div><br><small>$' . number_format($monto, 0, ',', '.') . '</small></td>';
                     } else {
                         $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #fff3cd; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #dc3545; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 14px; margin-bottom: 3px;">P</div><br><small>$' . number_format($monto, 0, ',', '.') . '</small></td>';
                     }
@@ -430,7 +430,7 @@ class ConsolidadosController {
             if (isset($totales['totales'][$mes])) {
                 $mesTotal = $totales['totales'][$mes];
                 $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; font-size: 9px;">';
-                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #28a745; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 11px;">✓</div> <span style="color: #155724;">$' . number_format($mesTotal['pagado'], 0, ',', '.') . '</span><br>';
+                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #28a745; color: white; text-align: center; line-height: 20px; font-size: 11px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-top: -2px;"><polyline points="20 6 9 17 4 12"></polyline></svg></div> <span style="color: #155724;">$' . number_format($mesTotal['pagado'], 0, ',', '.') . '</span><br>';
                 $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #dc3545; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 11px;">P</div> <span style="color: #721c24;">$' . number_format($mesTotal['pendiente'], 0, ',', '.') . '</span>';
                 $totalsHTML .= '</td>';
             } else {
@@ -490,7 +490,7 @@ class ConsolidadosController {
         </tbody>
     </table>
     <div class="legend">
-        <div class="legend-item"><span class="badge-ok">✓</span> Pagado</div>
+        <div class="legend-item"><span class="badge-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="20 6 9 17 4 12"></polyline></svg></span> Pagado</div>
         <div class="legend-item"><span class="badge-pending">P</span> Pendiente</div>
         <div class="legend-item" style="color: #adb5bd;">- Sin deuda registrada</div>
     </div>
