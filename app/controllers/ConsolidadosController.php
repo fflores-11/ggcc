@@ -241,10 +241,104 @@ class ConsolidadosController {
     }
 
     /**
-     * Exportar a Excel (placeholder)
+     * Exportar a CSV (compatible con Excel)
      */
     public function exportar(): void {
-        flash('success', 'Función de exportación a Excel en desarrollo');
-        redirect('consolidados.php');
+        $comunidadId = isset($_GET['comunidad_id']) ? (int) $_GET['comunidad_id'] : null;
+        $anio = isset($_GET['anio']) ? (int) $_GET['anio'] : date('Y');
+        
+        if (!$comunidadId) {
+            flash('error', 'Debe seleccionar una comunidad para exportar');
+            redirect('consolidados.php');
+        }
+        
+        // Obtener datos
+        $comunidad = $this->comunidadModel->find($comunidadId);
+        if (!$comunidad) {
+            flash('error', 'Comunidad no encontrada');
+            redirect('consolidados.php');
+        }
+        
+        $resultado = $this->generarMatriz($comunidadId, $anio);
+        $matriz = $resultado['filas'];
+        $totales = $resultado['totales'];
+        $meses = $this->getMesesDisponibles($comunidadId, $anio);
+        
+        if (empty($matriz)) {
+            flash('error', 'No hay datos para exportar');
+            redirect('consolidados.php?comunidad_id=' . $comunidadId . '&anio=' . $anio);
+        }
+        
+        // Generar nombre de archivo
+        $filename = 'Consolidado_' . preg_replace('/[^a-zA-Z0-9]/', '_', $comunidad['nombre']) . '_' . $anio . '_' . date('Ymd_His') . '.csv';
+        
+        // Configurar headers para descarga CSV
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Crear output stream
+        $output = fopen('php://output', 'w');
+        
+        // BOM para que Excel reconozca UTF-8
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        
+        // Título del reporte
+        fputcsv($output, ['CONSOLIDADO DE PAGOS']);
+        fputcsv($output, ['Comunidad:', $comunidad['nombre']]);
+        fputcsv($output, ['Dirección:', $comunidad['direccion'] . ', ' . $comunidad['comuna']]);
+        fputcsv($output, ['Año:', $anio]);
+        fputcsv($output, ['Generado:', date('d/m/Y H:i:s')]);
+        fputcsv($output, []); // Línea vacía
+        
+        // Encabezados de la tabla
+        $headers = ['Propiedad', 'Dueño'];
+        foreach ($meses as $mes) {
+            $headers[] = getMonthName($mes);
+        }
+        $headers[] = 'Total Pagado';
+        $headers[] = 'Total Pendiente';
+        fputcsv($output, $headers);
+        
+        // Datos de propiedades
+        foreach ($matriz as $fila) {
+            $row = [
+                $fila['propiedad']['nombre'],
+                $fila['propiedad']['nombre_dueno']
+            ];
+            
+            foreach ($meses as $mes) {
+                if (isset($fila['meses'][$mes])) {
+                    $estado = $fila['meses'][$mes]['estado'];
+                    $monto = $fila['meses'][$mes]['monto'];
+                    $row[] = $estado === 'Pagado' ? 'Pagado ($' . number_format($monto, 0, ',', '.') . ')' : 'Pendiente ($' . number_format($monto, 0, ',', '.') . ')';
+                } else {
+                    $row[] = '-';
+                }
+            }
+            
+            $row[] = $fila['total_pagado'] > 0 ? '$' . number_format($fila['total_pagado'], 0, ',', '.') : '-';
+            $row[] = $fila['total_pendiente'] > 0 ? '$' . number_format($fila['total_pendiente'], 0, ',', '.') : '-';
+            
+            fputcsv($output, $row);
+        }
+        
+        // Fila de totales
+        $totalsRow = ['TOTALES', ''];
+        foreach ($meses as $mes) {
+            if (isset($totales['totales'][$mes])) {
+                $mesTotal = $totales['totales'][$mes];
+                $totalsRow[] = 'Rec: $' . number_format($mesTotal['pagado'], 0, ',', '.') . ' / Pen: $' . number_format($mesTotal['pendiente'], 0, ',', '.');
+            } else {
+                $totalsRow[] = '-';
+            }
+        }
+        $totalsRow[] = '$' . number_format($totales['gran_total_pagado'] ?? 0, 0, ',', '.');
+        $totalsRow[] = '$' . number_format($totales['gran_total_pendiente'] ?? 0, 0, ',', '.');
+        fputcsv($output, $totalsRow);
+        
+        fclose($output);
+        exit;
     }
 }

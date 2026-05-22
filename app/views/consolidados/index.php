@@ -9,9 +9,11 @@ require_once __DIR__ . '/../partials/header.php';
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>Consolidado de Pagos</h4>
-    <a href="consolidados.php?action=exportar" class="btn btn-success">
+    <?php if ($comunidadId): ?>
+    <a href="consolidados.php?action=exportar&comunidad_id=<?= $comunidadId ?>&anio=<?= $anio ?>" class="btn btn-success">
         <i class="bi bi-file-earmark-excel me-2"></i>Exportar a Excel
     </a>
+    <?php endif; ?>
 </div>
 
 <!-- Filtros -->
