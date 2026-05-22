@@ -461,8 +461,8 @@ class ConsolidadosController {
         th { padding: 8px; border: 1px solid #dee2e6; background-color: #495057; color: white; font-size: 10px; }
         .legend { margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 10px; }
         .legend-item { display: inline-block; margin-right: 15px; }
-        .badge-ok { display: inline-block; width: 32px; height: 32px; background: #28a745; color: white; text-align: center; line-height: 32px; border-radius: 50%; font-size: 16px; }
-        .badge-pending { display: inline-block; width: 32px; height: 32px; background: #dc3545; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 16px; }
+        .badge-ok { display: inline-block; width: 20px; height: 20px; background: #28a745; color: white; text-align: center; line-height: 20px; border-radius: 50%; font-size: 12px; }
+        .badge-pending { display: inline-block; width: 20px; height: 20px; background: #dc3545; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 12px; }
     </style>
 </head>
 <body>
