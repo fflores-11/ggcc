@@ -439,49 +439,51 @@ class ConsolidadosController {
         $filasHTML = '';
         foreach ($matriz as $fila) {
             $filasHTML .= '<tr>';
-            $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; font-size: 10px;"><strong>' . htmlspecialchars($fila['propiedad']['nombre']) . '</strong><br><small style="color: #666;">' . htmlspecialchars($fila['propiedad']['nombre_dueno']) . '</small></td>';
+            $filasHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; font-size: 7px;"><strong>' . htmlspecialchars($fila['propiedad']['nombre']) . '</strong><br><small style="color: #666;">' . htmlspecialchars($fila['propiedad']['nombre_dueno']) . '</small></td>';
             
             foreach ($meses as $mes) {
                 if (isset($fila['meses'][$mes])) {
                     $estado = $fila['meses'][$mes]['estado'];
                     $monto = $fila['meses'][$mes]['monto'];
                     if ($estado === 'Pagado') {
-                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #d4edda; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #28a745; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 12px;">OK</div></td>';
+                        $filasHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: center; background-color: #d4edda; font-size: 8px;"><div style="display: inline-block; width: 18px; height: 18px; background-color: #28a745; color: white; text-align: center; line-height: 18px; font-weight: bold; font-size: 8px;">OK</div></td>';
                     } else {
-                        $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; background-color: #fff3cd; font-size: 10px;"><div style="display: inline-block; width: 32px; height: 32px; background-color: #dc3545; color: white; text-align: center; line-height: 32px; font-weight: bold; font-size: 12px;">X</div></td>';
+                        $filasHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: center; background-color: #fff3cd; font-size: 8px;"><div style="display: inline-block; width: 18px; height: 18px; background-color: #dc3545; color: white; text-align: center; line-height: 18px; font-weight: bold; font-size: 9px;">X</div></td>';
                     }
                 } else {
-                    $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; color: #adb5bd; font-size: 10px;">-</td>';
+                    $filasHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: center; color: #adb5bd; font-size: 8px;">-</td>';
                 }
             }
             
-            $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: right; font-size: 10px; color: #155724; font-weight: bold;">' . ($fila['total_pagado'] > 0 ? '$' . number_format($fila['total_pagado'], 0, ',', '.') : '-') . '</td>';
-            $filasHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: right; font-size: 10px; color: #721c24; font-weight: bold;">' . ($fila['total_pendiente'] > 0 ? '$' . number_format($fila['total_pendiente'], 0, ',', '.') : '-') . '</td>';
+            $filasHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: right; font-size: 8px; color: #155724; font-weight: bold;">' . ($fila['total_pagado'] > 0 ? '$' . number_format($fila['total_pagado'], 0, ',', '.') : '-') . '</td>';
+            $filasHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: right; font-size: 8px; color: #721c24; font-weight: bold;">' . ($fila['total_pendiente'] > 0 ? '$' . number_format($fila['total_pendiente'], 0, ',', '.') : '-') . '</td>';
             $filasHTML .= '</tr>';
         }
         
         // Fila de totales
         $totalsHTML = '<tr style="background-color: #e3f2fd;">';
-        $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; font-size: 10px; font-weight: bold;">TOTALES</td>';
+        $totalsHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; font-size: 8px; font-weight: bold;">TOTALES</td>';
         foreach ($meses as $mes) {
             if (isset($totales['totales'][$mes])) {
                 $mesTotal = $totales['totales'][$mes];
-                $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; font-size: 9px;">';
-                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #28a745; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 8px;">OK</div> <span style="color: #155724; font-weight: bold;">' . number_format($mesTotal['pagado'], 0, ',', '.') . '</span><br>';
-                $totalsHTML .= '<div style="display: inline-block; width: 20px; height: 20px; background-color: #dc3545; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 8px;">X</div> <span style="color: #721c24; font-weight: bold;">' . number_format($mesTotal['pendiente'], 0, ',', '.') . '</span>';
+                $totalsHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: center; font-size: 7px;">';
+                $totalsHTML .= '<div style="display: inline-block; width: 16px; height: 16px; background-color: #28a745; color: white; text-align: center; line-height: 16px; font-weight: bold; font-size: 6px;">OK</div> <span style="color: #155724; font-weight: bold;">' . number_format($mesTotal['pagado'], 0, ',', '.') . '</span><br>';
+                $totalsHTML .= '<div style="display: inline-block; width: 16px; height: 16px; background-color: #dc3545; color: white; text-align: center; line-height: 16px; font-weight: bold; font-size: 7px;">X</div> <span style="color: #721c24; font-weight: bold;">' . number_format($mesTotal['pendiente'], 0, ',', '.') . '</span>';
                 $totalsHTML .= '</td>';
             } else {
-                $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: center; font-size: 10px;">-</td>';
+                $totalsHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: center; font-size: 8px;">-</td>';
             }
         }
-        $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: right; font-size: 10px; font-weight: bold; color: #155724;">$' . number_format($totales['gran_total_pagado'] ?? 0, 0, ',', '.') . '</td>';
-        $totalsHTML .= '<td style="padding: 6px; border: 1px solid #dee2e6; text-align: right; font-size: 10px; font-weight: bold; color: #721c24;">$' . number_format($totales['gran_total_pendiente'] ?? 0, 0, ',', '.') . '</td>';
+        $totalsHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: right; font-size: 8px; font-weight: bold; color: #155724;">$' . number_format($totales['gran_total_pagado'] ?? 0, 0, ',', '.') . '</td>';
+        $totalsHTML .= '<td style="padding: 3px; border: 1px solid #dee2e6; text-align: right; font-size: 8px; font-weight: bold; color: #721c24;">$' . number_format($totales['gran_total_pendiente'] ?? 0, 0, ',', '.') . '</td>';
         $totalsHTML .= '</tr>';
         
         // Encabezados de meses
         $mesesHTML = '';
         foreach ($meses as $mes) {
-            $mesesHTML .= '<th style="padding: 8px; border: 1px solid #dee2e6; background-color: #495057; color: white; text-align: center; font-size: 10px; min-width: 70px;">' . getMonthName($mes) . '</th>';
+            // Abreviar nombre del mes para ahorrar ancho
+            $nombreMes = substr(getMonthName($mes), 0, 3);
+            $mesesHTML .= '<th style="padding: 4px; border: 1px solid #dee2e6; background-color: #495057; color: white; text-align: center; font-size: 8px; min-width: 40px;">' . $nombreMes . '</th>';
         }
         
         return '<!DOCTYPE html>
@@ -489,17 +491,19 @@ class ConsolidadosController {
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: Arial, Helvetica, sans-serif; margin: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
-        .header h2 { margin: 0; font-size: 18px; }
-        .header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 12px; }
-        .info { margin-bottom: 15px; font-size: 11px; color: #666; }
+        @page { margin: 10px; }
+        body { font-family: Arial, Helvetica, sans-serif; margin: 10px; font-size: 8px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .header h2 { margin: 0; font-size: 14px; }
+        .header p { margin: 3px 0 0 0; opacity: 0.9; font-size: 9px; }
+        .info { margin-bottom: 8px; font-size: 8px; color: #666; }
         table { width: 100%; border-collapse: collapse; }
-        th { padding: 8px; border: 1px solid #dee2e6; background-color: #495057; color: white; font-size: 10px; }
-        .legend { margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 10px; }
-        .legend-item { display: inline-block; margin-right: 15px; }
-        .badge-ok { display: inline-block; width: 20px; height: 20px; background: #28a745; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 8px; }
-        .badge-pending { display: inline-block; width: 20px; height: 20px; background: #dc3545; color: white; text-align: center; line-height: 20px; font-weight: bold; font-size: 12px; }
+        th { padding: 4px; border: 1px solid #dee2e6; background-color: #495057; color: white; font-size: 8px; }
+        td { padding: 3px; border: 1px solid #dee2e6; font-size: 8px; }
+        .legend { margin-top: 8px; padding: 6px; background: #f8f9fa; border-radius: 3px; font-size: 8px; }
+        .legend-item { display: inline-block; margin-right: 10px; }
+        .badge-ok { display: inline-block; width: 16px; height: 16px; background: #28a745; color: white; text-align: center; line-height: 16px; font-weight: bold; font-size: 7px; }
+        .badge-pending { display: inline-block; width: 16px; height: 16px; background: #dc3545; color: white; text-align: center; line-height: 16px; font-weight: bold; font-size: 9px; }
     </style>
 </head>
 <body>
@@ -515,10 +519,10 @@ class ConsolidadosController {
     <table>
         <thead>
             <tr>
-                <th style="min-width: 150px; text-align: left;">Propiedad / Dueño</th>
+                <th style="min-width: 90px; text-align: left;">Propiedad</th>
                 ' . $mesesHTML . '
-                <th style="text-align: right;">Total Pagado</th>
-                <th style="text-align: right;">Total Pendiente</th>
+                <th style="text-align: right; min-width: 55px;">Pagado</th>
+                <th style="text-align: right; min-width: 55px;">Pendiente</th>
             </tr>
         </thead>
         <tbody>
@@ -529,7 +533,7 @@ class ConsolidadosController {
     <div class="legend">
         <div class="legend-item"><span class="badge-ok">OK</span> Pagado</div>
         <div class="legend-item"><span class="badge-pending">X</span> Pendiente</div>
-        <div class="legend-item" style="color: #adb5bd;">- Sin deuda registrada</div>
+        <div class="legend-item" style="color: #adb5bd;">- Sin deuda</div>
     </div>
 </body>
 </html>';
