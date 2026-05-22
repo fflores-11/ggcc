@@ -26,10 +26,16 @@ class Dashboard {
         $sql = "SELECT COUNT(*) FROM propiedades WHERE activo = 1";
         $metricas['total_propiedades'] = (int) $this->db->query($sql)->fetchColumn();
 
-        // Total deuda pendiente
+        // Total deuda pendiente (solo hasta el mes actual)
+        $mesActual = (int) date('n');
+        $anioActual = (int) date('Y');
         $sql = "SELECT SUM(d.monto) FROM deudas d
                 LEFT JOIN propiedades p ON d.propiedad_id = p.id
-                WHERE d.estado = 'Pendiente' AND p.activo = 1";
+                WHERE d.estado = 'Pendiente' AND p.activo = 1
+                AND (
+                    d.anio < {$anioActual} 
+                    OR (d.anio = {$anioActual} AND d.mes <= {$mesActual})
+                )";
         $metricas['total_deuda'] = (float) ($this->db->query($sql)->fetchColumn() ?? 0);
 
         // Total recaudado (histórico)
@@ -66,13 +72,21 @@ class Dashboard {
      * @return array
      */
     public function getComunidadesConMayorDeuda(int $limit = 5): array {
+        $mesActual = (int) date('n');
+        $anioActual = (int) date('Y');
+        
         $sql = "SELECT c.id, c.nombre, c.comuna,
                        COUNT(DISTINCT p.id) as total_propiedades,
                        SUM(CASE WHEN d.estado = 'Pendiente' THEN d.monto ELSE 0 END) as total_deuda,
                        COUNT(CASE WHEN d.estado = 'Pendiente' THEN 1 END) as deudas_pendientes
                 FROM comunidades c
                 LEFT JOIN propiedades p ON c.id = p.comunidad_id AND p.activo = 1
-                LEFT JOIN deudas d ON p.id = d.propiedad_id AND d.estado = 'Pendiente'
+                LEFT JOIN deudas d ON p.id = d.propiedad_id 
+                    AND d.estado = 'Pendiente'
+                    AND (
+                        d.anio < {$anioActual} 
+                        OR (d.anio = {$anioActual} AND d.mes <= {$mesActual})
+                    )
                 WHERE c.activo = 1
                 GROUP BY c.id, c.nombre, c.comuna
                 HAVING total_deuda > 0
@@ -176,15 +190,23 @@ class Dashboard {
      * @return array
      */
     public function getPropiedadesMorosas(int $limit = 10): array {
+        $mesActual = (int) date('n');
+        $anioActual = (int) date('Y');
+        
         $sql = "SELECT p.id, p.nombre as propiedad_nombre, p.nombre_dueno,
                        c.nombre as comunidad_nombre,
                        COUNT(d.id) as meses_adeudados,
                        SUM(d.monto) as total_adeudado,
                        MIN(d.anio * 12 + d.mes) as primera_deuda_mes
                 FROM propiedades p
-                LEFT JOIN deudas d ON p.id = d.propiedad_id AND d.estado = 'Pendiente'
+                LEFT JOIN deudas d ON p.id = d.propiedad_id 
+                    AND d.estado = 'Pendiente'
+                    AND (
+                        d.anio < {$anioActual} 
+                        OR (d.anio = {$anioActual} AND d.mes <= {$mesActual})
+                    )
                 LEFT JOIN comunidades c ON p.comunidad_id = c.id
-                WHERE p.activo = 1 AND d.estado = 'Pendiente'
+                WHERE p.activo = 1
                 GROUP BY p.id, p.nombre, p.nombre_dueno, c.nombre
                 HAVING meses_adeudados > 0
                 ORDER BY total_adeudado DESC

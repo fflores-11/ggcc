@@ -77,6 +77,9 @@ class ReportesController {
      * Obtiene morosidad de una propiedad específica
      */
     private function getMorosoByPropiedad(int $propiedadId): ?array {
+        $mesActual = (int) date('n');
+        $anioActual = (int) date('Y');
+        
         $sql = "SELECT p.id, p.nombre as propiedad_nombre, p.nombre_dueno, p.email_dueno, p.whatsapp_dueno,
                        c.nombre as comunidad_nombre,
                        COUNT(d.id) as meses_adeudados,
@@ -84,16 +87,24 @@ class ReportesController {
                        GROUP_CONCAT(DISTINCT CONCAT(d.mes, '-', d.anio) ORDER BY d.anio, d.mes SEPARATOR ', ') as periodos_adeudados,
                        MIN(CONCAT(d.anio, '-', LPAD(d.mes, 2, '0'))) as primera_deuda
                 FROM propiedades p
-                LEFT JOIN deudas d ON p.id = d.propiedad_id AND d.estado = 'Pendiente'
+                LEFT JOIN deudas d ON p.id = d.propiedad_id 
+                    AND d.estado = 'Pendiente'
+                    AND (
+                        d.anio < :anio_actual 
+                        OR (d.anio = :anio_actual AND d.mes <= :mes_actual)
+                    )
                 LEFT JOIN comunidades c ON p.comunidad_id = c.id
                 WHERE p.id = :propiedad_id 
                 AND p.activo = 1
-                AND d.estado = 'Pendiente'
                 GROUP BY p.id, p.nombre, p.nombre_dueno, p.email_dueno, p.whatsapp_dueno, c.nombre
                 HAVING meses_adeudados > 0";
         
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':propiedad_id' => $propiedadId]);
+        $stmt->execute([
+            ':propiedad_id' => $propiedadId,
+            ':anio_actual' => $anioActual,
+            ':mes_actual' => $mesActual
+        ]);
         
         $result = $stmt->fetch();
         return $result ?: null;
@@ -255,6 +266,9 @@ class ReportesController {
      * Obtiene propiedades morosas
      */
     private function getMorosos(int $comunidadId, int $minimoMeses): array {
+        $mesActual = (int) date('n');
+        $anioActual = (int) date('Y');
+        
         $sql = "SELECT p.id, p.nombre as propiedad_nombre, p.nombre_dueno, p.email_dueno, p.whatsapp_dueno,
                        c.nombre as comunidad_nombre,
                        COUNT(d.id) as meses_adeudados,
@@ -262,11 +276,15 @@ class ReportesController {
                        GROUP_CONCAT(DISTINCT CONCAT(d.mes, '-', d.anio) ORDER BY d.anio, d.mes SEPARATOR ', ') as periodos_adeudados,
                        MIN(CONCAT(d.anio, '-', LPAD(d.mes, 2, '0'))) as primera_deuda
                 FROM propiedades p
-                LEFT JOIN deudas d ON p.id = d.propiedad_id AND d.estado = 'Pendiente'
+                LEFT JOIN deudas d ON p.id = d.propiedad_id 
+                    AND d.estado = 'Pendiente'
+                    AND (
+                        d.anio < :anio_actual 
+                        OR (d.anio = :anio_actual AND d.mes <= :mes_actual)
+                    )
                 LEFT JOIN comunidades c ON p.comunidad_id = c.id
                 WHERE p.comunidad_id = :comunidad_id 
                 AND p.activo = 1
-                AND d.estado = 'Pendiente'
                 GROUP BY p.id, p.nombre, p.nombre_dueno, p.email_dueno, p.whatsapp_dueno, c.nombre
                 HAVING meses_adeudados >= :minimo_meses
                 ORDER BY total_adeudado DESC";
@@ -274,7 +292,9 @@ class ReportesController {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':comunidad_id' => $comunidadId,
-            ':minimo_meses' => $minimoMeses
+            ':minimo_meses' => $minimoMeses,
+            ':anio_actual' => $anioActual,
+            ':mes_actual' => $mesActual
         ]);
         
         return $stmt->fetchAll();
