@@ -312,14 +312,15 @@ class ConsolidadosController {
                 if (isset($fila['meses'][$mes])) {
                     $estado = $fila['meses'][$mes]['estado'];
                     $monto = $fila['meses'][$mes]['monto'];
-                    $row[] = $estado === 'Pagado' ? 'Pagado ($' . number_format($monto, 0, ',', '.') . ')' : 'Pendiente ($' . number_format($monto, 0, ',', '.') . ')';
+                    // ✓ para pagado, P para pendiente + monto como número limpio
+                    $row[] = $estado === 'Pagado' ? "✓ {$monto}" : "P {$monto}";
                 } else {
                     $row[] = '-';
                 }
             }
             
-            $row[] = $fila['total_pagado'] > 0 ? '$' . number_format($fila['total_pagado'], 0, ',', '.') : '-';
-            $row[] = $fila['total_pendiente'] > 0 ? '$' . number_format($fila['total_pendiente'], 0, ',', '.') : '-';
+            $row[] = $fila['total_pagado'] > 0 ? $fila['total_pagado'] : 0;
+            $row[] = $fila['total_pendiente'] > 0 ? $fila['total_pendiente'] : 0;
             
             fputcsv($output, $row);
         }
@@ -329,13 +330,13 @@ class ConsolidadosController {
         foreach ($meses as $mes) {
             if (isset($totales['totales'][$mes])) {
                 $mesTotal = $totales['totales'][$mes];
-                $totalsRow[] = 'Rec: $' . number_format($mesTotal['pagado'], 0, ',', '.') . ' / Pen: $' . number_format($mesTotal['pendiente'], 0, ',', '.');
+                $totalsRow[] = $mesTotal['pagado'] + $mesTotal['pendiente'];
             } else {
-                $totalsRow[] = '-';
+                $totalsRow[] = 0;
             }
         }
-        $totalsRow[] = '$' . number_format($totales['gran_total_pagado'] ?? 0, 0, ',', '.');
-        $totalsRow[] = '$' . number_format($totales['gran_total_pendiente'] ?? 0, 0, ',', '.');
+        $totalsRow[] = $totales['gran_total_pagado'] ?? 0;
+        $totalsRow[] = $totales['gran_total_pendiente'] ?? 0;
         fputcsv($output, $totalsRow);
         
         fclose($output);
