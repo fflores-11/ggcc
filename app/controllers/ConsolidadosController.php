@@ -101,14 +101,16 @@ class ConsolidadosController {
             $estado = $deuda['estado'];
             $monto = (float) $deuda['monto'];
             
-            $fila['meses'][$mes] = [
-                'estado' => $estado,
-                'monto' => $monto,
-                'deuda_id' => $deuda['id']
-            ];
-            
-            // Solo sumar al total pendiente si no es un mes futuro
+            // Solo incluir meses hasta el mes actual (no futuros)
             $esMesFuturo = ($anio > $anioActual) || ($anio == $anioActual && $mes > $mesActual);
+            
+            if (!$esMesFuturo) {
+                $fila['meses'][$mes] = [
+                    'estado' => $estado,
+                    'monto' => $monto,
+                    'deuda_id' => $deuda['id']
+                ];
+            }
             
             if ($estado === 'Pagado') {
                 $fila['total_pagado'] += $monto;
@@ -117,14 +119,16 @@ class ConsolidadosController {
             }
             
             // Acumular totales por mes (solo meses no futuros para pendientes)
-            if (!isset($totalesPorMes[$mes])) {
-                $totalesPorMes[$mes] = ['pagado' => 0, 'pendiente' => 0];
-            }
-            
-            if ($estado === 'Pagado') {
-                $totalesPorMes[$mes]['pagado'] += $monto;
-            } elseif (!$esMesFuturo) {
-                $totalesPorMes[$mes]['pendiente'] += $monto;
+            if (!$esMesFuturo) {
+                if (!isset($totalesPorMes[$mes])) {
+                    $totalesPorMes[$mes] = ['pagado' => 0, 'pendiente' => 0];
+                }
+                
+                if ($estado === 'Pagado') {
+                    $totalesPorMes[$mes]['pagado'] += $monto;
+                } else {
+                    $totalesPorMes[$mes]['pendiente'] += $monto;
+                }
             }
         }
         
@@ -188,14 +192,16 @@ class ConsolidadosController {
                 $estado = $deuda['estado'];
                 $monto = (float) $deuda['monto'];
                 
-                $fila['meses'][$mes] = [
-                    'estado' => $estado,
-                    'monto' => $monto,
-                    'deuda_id' => $deuda['id']
-                ];
-                
-                // Solo sumar al total pendiente si no es un mes futuro
+                // Solo incluir meses hasta el mes actual (no futuros)
                 $esMesFuturo = ($anio > $anioActual) || ($anio == $anioActual && $mes > $mesActual);
+                
+                if (!$esMesFuturo) {
+                    $fila['meses'][$mes] = [
+                        'estado' => $estado,
+                        'monto' => $monto,
+                        'deuda_id' => $deuda['id']
+                    ];
+                }
                 
                 if ($estado === 'Pagado') {
                     $fila['total_pagado'] += $monto;
@@ -204,14 +210,16 @@ class ConsolidadosController {
                 }
                 
                 // Acumular totales por mes (solo meses no futuros para pendientes)
-                if (!isset($totalesPorMes[$mes])) {
-                    $totalesPorMes[$mes] = ['pagado' => 0, 'pendiente' => 0];
-                }
-                
-                if ($estado === 'Pagado') {
-                    $totalesPorMes[$mes]['pagado'] += $monto;
-                } elseif (!$esMesFuturo) {
-                    $totalesPorMes[$mes]['pendiente'] += $monto;
+                if (!$esMesFuturo) {
+                    if (!isset($totalesPorMes[$mes])) {
+                        $totalesPorMes[$mes] = ['pagado' => 0, 'pendiente' => 0];
+                    }
+                    
+                    if ($estado === 'Pagado') {
+                        $totalesPorMes[$mes]['pagado'] += $monto;
+                    } else {
+                        $totalesPorMes[$mes]['pendiente'] += $monto;
+                    }
                 }
             }
             
@@ -251,7 +259,22 @@ class ConsolidadosController {
             ':anio' => $anio
         ]);
         
-        return array_column($stmt->fetchAll(), 'mes');
+        $meses = array_column($stmt->fetchAll(), 'mes');
+        
+        // Filtrar meses futuros: solo mostrar hasta el mes actual
+        $anioActual = (int) date('Y');
+        $mesActual = (int) date('n');
+        
+        if ($anio == $anioActual) {
+            $meses = array_filter($meses, function($mes) use ($mesActual) {
+                return (int)$mes <= $mesActual;
+            });
+        } elseif ($anio > $anioActual) {
+            // Año futuro: no mostrar meses
+            return [];
+        }
+        
+        return array_values($meses);
     }
 
     /**
