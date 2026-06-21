@@ -406,7 +406,7 @@ class Pago extends Model {
      * @param int $limit
      * @return array
      */
-    public function getByComunidadPaginated(int $comunidadId, int $offset, int $limit): array {
+    public function getByComunidadPaginated(int $comunidadId, int $offset, int $limit, ?int $propiedadId = null): array {
         $sql = "SELECT p.*, 
                        pr.nombre as propiedad_nombre, 
                        pr.nombre_dueno,
@@ -415,13 +415,24 @@ class Pago extends Model {
                 LEFT JOIN propiedades pr ON p.propiedad_id = pr.id
                 LEFT JOIN pagos_detalle pd ON p.id = pd.pago_id
                 LEFT JOIN deudas d ON pd.deuda_id = d.id
-                WHERE pr.comunidad_id = :comunidad_id
-                GROUP BY p.id
+                WHERE pr.comunidad_id = :comunidad_id";
+        
+        $params = [':comunidad_id' => $comunidadId];
+        
+        if ($propiedadId) {
+            $sql .= " AND p.propiedad_id = :propiedad_id";
+            $params[':propiedad_id'] = $propiedadId;
+        }
+        
+        $sql .= " GROUP BY p.id
                 ORDER BY p.fecha DESC
                 LIMIT :limit OFFSET :offset";
         
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':comunidad_id', $comunidadId, PDO::PARAM_INT);
+        if ($propiedadId) {
+            $stmt->bindValue(':propiedad_id', $propiedadId, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -433,13 +444,25 @@ class Pago extends Model {
      * @param int|null $comunidadId
      * @return int
      */
-    public function countPagos(?int $comunidadId = null): int {
-        if ($comunidadId) {
+    public function countPagos(?int $comunidadId = null, ?int $propiedadId = null): int {
+        if ($comunidadId || $propiedadId) {
             $sql = "SELECT COUNT(*) FROM {$this->table} p
                     LEFT JOIN propiedades pr ON p.propiedad_id = pr.id
-                    WHERE pr.comunidad_id = :comunidad_id";
+                    WHERE 1=1";
+            $params = [];
+            
+            if ($comunidadId) {
+                $sql .= " AND pr.comunidad_id = :comunidad_id";
+                $params[':comunidad_id'] = $comunidadId;
+            }
+            
+            if ($propiedadId) {
+                $sql .= " AND p.propiedad_id = :propiedad_id";
+                $params[':propiedad_id'] = $propiedadId;
+            }
+            
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':comunidad_id' => $comunidadId]);
+            $stmt->execute($params);
         } else {
             $sql = "SELECT COUNT(*) FROM {$this->table}";
             $stmt = $this->db->query($sql);

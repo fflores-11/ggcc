@@ -24,9 +24,9 @@ $perPage = $perPage ?? 20;
     </div>
 </div>
 
-<!-- Filtro por Comunidad -->
+<!-- Filtros -->
 <div class="form-section mb-4">
-    <form method="GET" action="pagos.php" class="row align-items-end">
+    <form method="GET" action="pagos.php" class="row align-items-end g-2">
         <div class="col-md-4">
             <label class="form-label">Filtrar por Comunidad</label>
             <select name="comunidad_id" class="form-select" onchange="this.form.submit()">
@@ -38,6 +38,19 @@ $perPage = $perPage ?? 20;
                 <?php endforeach; ?>
             </select>
         </div>
+        <?php if (!empty($propiedades)): ?>
+        <div class="col-md-4">
+            <label class="form-label">Filtrar por Propiedad</label>
+            <select name="propiedad_id" class="form-select" onchange="this.form.submit()">
+                <option value="">Todas las propiedades</option>
+                <?php foreach ($propiedades as $prop): ?>
+                    <option value="<?= $prop['id'] ?>" <?= (isset($_GET['propiedad_id']) && $_GET['propiedad_id'] == $prop['id']) ? 'selected' : '' ?>>
+                        <?= e($prop['nombre']) ?> (<?= e($prop['nombre_dueno']) ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <?php endif; ?>
         <div class="col-md-2">
             <button type="submit" class="btn btn-outline-primary w-100">Filtrar</button>
         </div>

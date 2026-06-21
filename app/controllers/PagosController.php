@@ -26,13 +26,17 @@ class PagosController {
      */
     public function index(): void {
         $comunidadId = isset($_GET['comunidad_id']) ? (int) $_GET['comunidad_id'] : null;
+        $propiedadId = isset($_GET['propiedad_id']) ? (int) $_GET['propiedad_id'] : null;
         
         // Paginación
         $pagination = getPaginationParams(20);
         
+        $propiedades = [];
+        
         if ($comunidadId) {
-            $totalRecords = $this->pagoModel->countPagos($comunidadId);
-            $pagos = $this->pagoModel->getByComunidadPaginated($comunidadId, $pagination['offset'], $pagination['perPage']);
+            $propiedades = $this->propiedadModel->getForSelect($comunidadId);
+            $totalRecords = $this->pagoModel->countPagos($comunidadId, $propiedadId ?: null);
+            $pagos = $this->pagoModel->getByComunidadPaginated($comunidadId, $pagination['offset'], $pagination['perPage'], $propiedadId ?: null);
         } else {
             $totalRecords = $this->pagoModel->countPagos();
             $pagos = $this->pagoModel->getAllWithDetailsPaginated($pagination['offset'], $pagination['perPage']);
