@@ -124,6 +124,11 @@ $perPage = $perPage ?? 20;
     </div>
 </div>
 
+<!-- Paginador -->
+<div class="mt-3">
+    <?= renderPagination($totalRecords, $currentPage, $perPage) ?>
+</div>
+
 <!-- Modal Generar Deudas -->
 <div class="modal fade" id="generarDeudasModal" tabindex="-1">
     <div class="modal-dialog">
