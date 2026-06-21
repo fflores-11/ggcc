@@ -30,6 +30,17 @@ require_once __DIR__ . '/../partials/header.php';
                 <?php endforeach; ?>
             </select>
         </div>
+        <div class="col-md-3">
+            <label class="form-label">Propiedad</label>
+            <select name="propiedad_id" class="form-select">
+                <option value="">Todas las propiedades</option>
+                <?php foreach ($propiedades as $prop): ?>
+                    <option value="<?= $prop['id'] ?>" <?= ($propiedadId ?? 0) == $prop['id'] ? 'selected' : '' ?>>
+                        <?= e($prop['nombre']) ?> (<?= e($prop['nombre_dueno']) ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <div class="col-md-2">
             <label class="form-label">Mes</label>
             <select name="mes" class="form-select">

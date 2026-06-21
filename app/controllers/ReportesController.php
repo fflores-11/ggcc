@@ -115,10 +115,12 @@ class ReportesController {
      */
     public function pagos(): void {
         $comunidadId = isset($_GET['comunidad_id']) ? (int) $_GET['comunidad_id'] : null;
+        $propiedadId = isset($_GET['propiedad_id']) ? (int) $_GET['propiedad_id'] : null;
         $mes = isset($_GET['mes']) ? (int) $_GET['mes'] : date('n');
         $anio = isset($_GET['anio']) ? (int) $_GET['anio'] : date('Y');
         
         $comunidades = $this->comunidadModel->getForSelect();
+        $propiedades = [];
         $pagos = [];
         $comunidad = null;
         $totalRecaudado = 0;
@@ -136,7 +138,9 @@ class ReportesController {
             }
         } elseif ($comunidadId) {
             $comunidad = $this->comunidadModel->find($comunidadId);
-            $pagos = $this->getPagosPorPeriodo($comunidadId, $mes, $anio);
+            $propiedadModel = new Propiedad();
+            $propiedades = $propiedadModel->getForSelect($comunidadId);
+            $pagos = $this->getPagosPorPeriodo($comunidadId, $mes, $anio, $propiedadId ?: null);
             $totalRecaudado = array_sum(array_column($pagos, 'monto'));
         }
         
@@ -303,7 +307,7 @@ class ReportesController {
     /**
      * Obtiene pagos por período
      */
-    private function getPagosPorPeriodo(int $comunidadId, int $mes, int $anio): array {
+    private function getPagosPorPeriodo(int $comunidadId, int $mes, int $anio, ?int $propiedadId = null): array {
         $sql = "SELECT p.id, p.fecha, p.monto, p.observaciones,
                        pr.nombre as propiedad_nombre, pr.nombre_dueno,
                        GROUP_CONCAT(DISTINCT CONCAT(d.mes, '-', d.anio) ORDER BY d.anio, d.mes SEPARATOR ', ') as meses_pagados
@@ -312,16 +316,24 @@ class ReportesController {
                 LEFT JOIN pagos_detalle pd ON p.id = pd.pago_id
                 LEFT JOIN deudas d ON pd.deuda_id = d.id
                 WHERE pr.comunidad_id = :comunidad_id
-                AND MONTH(p.fecha) = :mes AND YEAR(p.fecha) = :anio
-                GROUP BY p.id
-                ORDER BY p.fecha DESC";
+                AND MONTH(p.fecha) = :mes AND YEAR(p.fecha) = :anio";
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
+        $params = [
             ':comunidad_id' => $comunidadId,
             ':mes' => $mes,
             ':anio' => $anio
-        ]);
+        ];
+        
+        if ($propiedadId) {
+            $sql .= " AND p.propiedad_id = :propiedad_id";
+            $params[':propiedad_id'] = $propiedadId;
+        }
+        
+        $sql .= " GROUP BY p.id
+                ORDER BY p.fecha DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         
         return $stmt->fetchAll();
     }
