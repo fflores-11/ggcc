@@ -313,24 +313,67 @@ class Deuda extends Model {
                 }
 
                 $montoDeuda = (float) $deuda['monto'];
+                $deudaId = (int) $deuda['id'];
 
                 if ($saldoRestante >= $montoDeuda) {
-                    // Pagar la deuda completa con saldo
-                    $propiedadModel->aplicarSaldoADeuda(
-                        $propiedadId,
-                        $montoDeuda,
-                        $deuda['id'],
-                        "Pago automático con saldo disponible"
-                    );
+                    // Reducir saldo de la propiedad
+                    $saldoNuevo = $saldoRestante - $montoDeuda;
+                    $sqlSaldo = "UPDATE propiedades SET saldo = :saldo WHERE id = :id";
+                    $stmtSaldo = $this->db->prepare($sqlSaldo);
+                    $stmtSaldo->execute([':saldo' => $saldoNuevo, ':id' => $propiedadId]);
+
+                    // Registrar en historial de saldo
+                    $sqlHist = "INSERT INTO propiedades_saldo_historial 
+                                (propiedad_id, tipo_movimiento, monto, saldo_anterior, saldo_nuevo, referencia_tipo, referencia_id, descripcion) 
+                                VALUES (:propiedad_id, 'aplicacion_deuda', :monto, :saldo_anterior, :saldo_nuevo, 'deuda', :deuda_id, :descripcion)";
+                    $stmtHist = $this->db->prepare($sqlHist);
+                    $stmtHist->execute([
+                        ':propiedad_id' => $propiedadId,
+                        ':monto' => $montoDeuda,
+                        ':saldo_anterior' => $saldoRestante,
+                        ':saldo_nuevo' => $saldoNuevo,
+                        ':deuda_id' => $deudaId,
+                        ':descripcion' => 'Pago automático con saldo disponible'
+                    ]);
 
                     // Marcar deuda como pagada con saldo
                     $sqlUpdate = "UPDATE {$this->table} SET estado = 'Pagado', pagada_con_saldo = 1 WHERE id = :id";
                     $stmtUpdate = $this->db->prepare($sqlUpdate);
-                    $stmtUpdate->execute([':id' => $deuda['id']]);
+                    $stmtUpdate->execute([':id' => $deudaId]);
 
-                    $saldoRestante -= $montoDeuda;
+                    $saldoRestante = $saldoNuevo;
                     $montoTotalAplicado += $montoDeuda;
-                    $deudasPagadas[] = $deuda['id'];
+                    $deudasPagadas[] = $deudaId;
+                } else {
+                    // Pago parcial: aplicar el saldo restante para reducir la deuda
+                    $nuevoMonto = $montoDeuda - $saldoRestante;
+
+                    // Reducir el monto de la deuda
+                    $sqlUpdate = "UPDATE {$this->table} SET monto = :nuevo_monto WHERE id = :id";
+                    $stmtUpdate = $this->db->prepare($sqlUpdate);
+                    $stmtUpdate->execute([':nuevo_monto' => $nuevoMonto, ':id' => $deudaId]);
+
+                    // Reducir saldo de la propiedad a 0
+                    $sqlSaldo = "UPDATE propiedades SET saldo = 0 WHERE id = :id";
+                    $stmtSaldo = $this->db->prepare($sqlSaldo);
+                    $stmtSaldo->execute([':id' => $propiedadId]);
+
+                    // Registrar en historial de saldo
+                    $sqlHist = "INSERT INTO propiedades_saldo_historial 
+                                (propiedad_id, tipo_movimiento, monto, saldo_anterior, saldo_nuevo, referencia_tipo, referencia_id, descripcion) 
+                                VALUES (:propiedad_id, 'aplicacion_deuda', :monto, :saldo_anterior, 0, 'deuda', :deuda_id, :descripcion)";
+                    $stmtHist = $this->db->prepare($sqlHist);
+                    $stmtHist->execute([
+                        ':propiedad_id' => $propiedadId,
+                        ':monto' => $saldoRestante,
+                        ':saldo_anterior' => $saldoRestante,
+                        ':deuda_id' => $deudaId,
+                        ':descripcion' => 'Pago parcial automático - saldo traspasado a deuda de mes ' . $deuda['mes'] . '/' . $deuda['anio']
+                    ]);
+
+                    $montoTotalAplicado += $saldoRestante;
+                    $deudasPagadas[] = $deudaId;
+                    $saldoRestante = 0;
                 }
             }
 
