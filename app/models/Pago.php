@@ -150,6 +150,11 @@ class Pago extends Model {
             }
 
             $this->db->commit();
+
+            // Actualizar control de caja del mes correspondiente
+            $saldoMensual = new SaldoMensual();
+            $saldoMensual->actualizarPorPropiedad($data['propiedad_id'], $data['fecha']);
+
             return $pagoId;
 
         } catch (Exception $e) {
@@ -196,6 +201,11 @@ class Pago extends Model {
             );
 
             $this->db->commit();
+
+            // Actualizar control de caja del mes correspondiente
+            $saldoMensual = new SaldoMensual();
+            $saldoMensual->actualizarPorPropiedad($data['propiedad_id'], $data['fecha']);
+
             return $pagoId;
 
         } catch (Exception $e) {
@@ -282,6 +292,11 @@ class Pago extends Model {
             }
 
             $this->db->commit();
+
+            // Actualizar control de caja del mes correspondiente
+            $saldoMensual = new SaldoMensual();
+            $saldoMensual->actualizarPorPropiedad($data['propiedad_id'], $data['fecha']);
+
             return [
                 'pago_id' => $pagoId,
                 'saldo_generado' => $saldoGenerado,

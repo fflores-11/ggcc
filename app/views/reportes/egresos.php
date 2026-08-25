@@ -35,6 +35,16 @@ foreach ($egresos as $egreso) {
     <form method="GET" action="reportes.php" class="row align-items-end">
         <input type="hidden" name="action" value="egresos">
         <div class="col-md-3">
+            <label class="form-label">Comunidad</label>
+            <select name="comunidad_id" class="form-select">
+                <?php foreach ($comunidades as $com): ?>
+                    <option value="<?= $com['id'] ?>" <?= (isset($comunidadId) && $comunidadId == $com['id']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($com['nombre']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-md-3">
             <label class="form-label">Mes</label>
             <select name="mes" class="form-select">
                 <?php for ($i = 1; $i <= 12; $i++): ?>

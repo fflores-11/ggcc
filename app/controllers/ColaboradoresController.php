@@ -8,11 +8,15 @@ class ColaboradoresController {
     private Colaborador $colaboradorModel;
     private PagoColaborador $pagoColaboradorModel;
     private Usuario $usuarioModel;
+    private Comunidad $comunidadModel;
+    private SaldoMensual $saldoMensualModel;
 
     public function __construct() {
         $this->colaboradorModel = new Colaborador();
         $this->pagoColaboradorModel = new PagoColaborador();
         $this->usuarioModel = new Usuario();
+        $this->comunidadModel = new Comunidad();
+        $this->saldoMensualModel = new SaldoMensual();
     }
 
     /**
@@ -362,6 +366,9 @@ class ColaboradoresController {
                     $this->pagoColaboradorModel->updateImagenPath($pagoId, $imagenPath);
                 }
             }
+
+            // Actualizar control de caja del mes correspondiente
+            $this->actualizarSaldoMensualPorFecha($data['fecha']);
             
             flash('success', 'Pago registrado exitosamente: ' . formatMoney($data['monto']));
             redirect('colaboradores.php?action=pagos');
@@ -382,6 +389,9 @@ class ColaboradoresController {
             redirect('colaboradores.php?action=pagos');
         }
 
+        $pago = $this->pagoColaboradorModel->getWithImagen($id);
+        $fechaPago = $pago['fecha'] ?? null;
+
         // Eliminar imagen física si existe
         $imagenPath = $this->pagoColaboradorModel->getImagenPath($id);
         if ($imagenPath && file_exists(PUBLIC_PATH . '/' . $imagenPath)) {
@@ -391,6 +401,11 @@ class ColaboradoresController {
         $success = $this->pagoColaboradorModel->hardDelete($id);
         
         if ($success) {
+            // Actualizar control de caja del mes correspondiente
+            if ($fechaPago) {
+                $this->actualizarSaldoMensualPorFecha($fechaPago);
+            }
+
             flash('success', 'Pago eliminado exitosamente');
         } else {
             flash('error', 'Error al eliminar el pago');
@@ -450,6 +465,8 @@ class ColaboradoresController {
             redirect('colaboradores.php?action=pagos');
         }
 
+        $fechaAnterior = $pago['fecha'];
+
         $data = [
             'colaborador_id' => (int) ($_POST['colaborador_id'] ?? 0),
             'detalle' => trim($_POST['detalle'] ?? ''),
@@ -480,6 +497,11 @@ class ColaboradoresController {
         $success = $this->pagoColaboradorModel->update($id, $data);
         
         if ($success) {
+            // Actualizar control de caja del mes anterior (por si cambió la fecha)
+            $this->actualizarSaldoMensualPorFecha($fechaAnterior);
+            // Actualizar control de caja del mes nuevo
+            $this->actualizarSaldoMensualPorFecha($data['fecha']);
+
             flash('success', 'Pago actualizado exitosamente');
             redirect('colaboradores.php?action=pagos');
         } else {
@@ -781,5 +803,18 @@ class ColaboradoresController {
         flash('success', 'Imagen eliminada exitosamente');
         
         redirect('colaboradores.php?action=pagos');
+    }
+
+    /**
+     * Actualiza el saldo mensual de la comunidad para una fecha dada.
+     * Como los pagos a colaboradores no tienen comunidad, se usa la primera comunidad activa.
+     */
+    private function actualizarSaldoMensualPorFecha(string $fecha): void {
+        $comunidades = $this->comunidadModel->getForSelect();
+        if (empty($comunidades)) {
+            return;
+        }
+        $comunidadId = (int) $comunidades[0]['id'];
+        $this->saldoMensualModel->actualizarPorComunidad($comunidadId, $fecha);
     }
 }

@@ -238,31 +238,48 @@ class ReportesController {
     public function egresos(): void {
         $mes = isset($_GET['mes']) ? (int) $_GET['mes'] : date('n');
         $anio = isset($_GET['anio']) ? (int) $_GET['anio'] : date('Y');
-        
+
         $comunidades = $this->comunidadModel->getForSelect();
         $egresos = [];
         $totalEgresos = 0;
-        
+
         // Propietarios no pueden ver egresos (información administrativa)
         if (getUserRole() === 'propietario') {
             flash('error', 'No tiene permisos para ver este reporte');
             redirect('reportes.php');
         }
-        
+
+        // Determinar comunidad a consultar
+        $comunidadId = isset($_GET['comunidad_id']) ? (int) $_GET['comunidad_id'] : null;
+        if (!$comunidadId && !empty($comunidades)) {
+            $comunidadId = (int) $comunidades[0]['id'];
+        }
+        $comunidad = $comunidadId ? $this->comunidadModel->find($comunidadId) : null;
+
         // Obtener todos los pagos a colaboradores del período
         $egresos = $this->getEgresosPorPeriodo($mes, $anio);
         $totalEgresos = array_sum(array_column($egresos, 'monto'));
-        
-        // Obtener total de pagos de gastos comunes del mes
-        $totalIngresosGC = $this->getTotalPagosGastosComunes($mes, $anio);
-        
-        // Obtener saldo del mes anterior desde la tabla saldos_mensuales (igual que el Dashboard)
-        $resumenMesAnterior = $this->getResumenMesAnteriorDesdeSaldos($mes, $anio);
-        $saldoMesAnterior = $resumenMesAnterior['saldo_actual'];
-        
+
+        // Obtener total de pagos de gastos comunes del mes, filtrado por comunidad
+        $totalIngresosGC = $this->getTotalPagosGastosComunes($mes, $anio, $comunidadId);
+
+        // Calcular mes y año anterior
+        $mesAnterior = $mes - 1;
+        $anioAnterior = $anio;
+        if ($mesAnterior < 1) {
+            $mesAnterior = 12;
+            $anioAnterior--;
+        }
+
+        // Obtener saldo del mes anterior directamente desde la tabla saldos_mensuales
+        // Si no existe registro, usar 0 (no aplicar cálculo de respaldo histórico)
+        $saldoMesAnterior = $comunidadId
+            ? ($this->saldoMensualModel->getSaldoPeriodo($comunidadId, $anioAnterior, $mesAnterior) ?? 0)
+            : 0;
+
         // Calcular saldo según fórmula: (pago gastos comunes + saldo mes anterior) - pago colaboradores
         $saldo = ($totalIngresosGC + $saldoMesAnterior) - $totalEgresos;
-        
+
         $title = 'Reporte de Egresos - ' . getMonthName($mes) . ' ' . $anio;
         require_once VIEWS_PATH . '/reportes/egresos.php';
     }
@@ -389,18 +406,30 @@ class ReportesController {
 
     /**
      * Obtiene el total de pagos de gastos comunes (ingresos) por período
+     * @param int $mes
+     * @param int $anio
+     * @param int|null $comunidadId Si se especifica, filtra por comunidad
+     * @return float
      */
-    private function getTotalPagosGastosComunes(int $mes, int $anio): float {
-        $sql = "SELECT COALESCE(SUM(monto), 0) as total
-                FROM pagos
-                WHERE MONTH(fecha) = :mes AND YEAR(fecha) = :anio";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
+    private function getTotalPagosGastosComunes(int $mes, int $anio, ?int $comunidadId = null): float {
+        $sql = "SELECT COALESCE(SUM(p.monto), 0) as total
+                FROM pagos p
+                JOIN propiedades pr ON p.propiedad_id = pr.id
+                WHERE MONTH(p.fecha) = :mes AND YEAR(p.fecha) = :anio";
+
+        $params = [
             ':mes' => $mes,
             ':anio' => $anio
-        ]);
-        
+        ];
+
+        if ($comunidadId) {
+            $sql .= " AND pr.comunidad_id = :comunidad_id";
+            $params[':comunidad_id'] = $comunidadId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
         $result = $stmt->fetch();
         return (float) ($result['total'] ?? 0);
     }

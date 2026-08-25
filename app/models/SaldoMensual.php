@@ -362,4 +362,40 @@ class SaldoMensual extends Model {
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([':id' => $saldoId]);
     }
+
+    /**
+     * Actualiza los totales del saldo mensual correspondiente a una propiedad y fecha.
+     * Útil para mantener el control de caja sincronizado cuando se registran/editan/eliminan pagos.
+     * @param int $propiedadId
+     * @param string $fecha
+     * @return void
+     */
+    public function actualizarPorPropiedad(int $propiedadId, string $fecha): void {
+        $sql = "SELECT comunidad_id FROM propiedades WHERE id = :id LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $propiedadId]);
+        $comunidadId = $stmt->fetchColumn();
+
+        if (!$comunidadId) {
+            return;
+        }
+
+        $this->actualizarPorComunidad((int) $comunidadId, $fecha);
+    }
+
+    /**
+     * Actualiza los totales del saldo mensual correspondiente a una comunidad y fecha.
+     * @param int $comunidadId
+     * @param string $fecha
+     * @return void
+     */
+    public function actualizarPorComunidad(int $comunidadId, string $fecha): void {
+        $mes = (int) date('n', strtotime($fecha));
+        $anio = (int) date('Y', strtotime($fecha));
+
+        $saldo = $this->getOrCreate($comunidadId, $anio, $mes);
+        if ($saldo && !$saldo['cerrado']) {
+            $this->actualizarTotales($saldo['id']);
+        }
+    }
 }

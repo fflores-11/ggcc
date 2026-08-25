@@ -11,6 +11,7 @@ class PagosController {
     private Comunidad $comunidadModel;
     private ConfiguracionSMTP $smtpConfigModel;
     private Usuario $usuarioModel;
+    private SaldoMensual $saldoMensualModel;
 
     public function __construct() {
         $this->pagoModel = new Pago();
@@ -19,6 +20,7 @@ class PagosController {
         $this->comunidadModel = new Comunidad();
         $this->smtpConfigModel = new ConfiguracionSMTP();
         $this->usuarioModel = new Usuario();
+        $this->saldoMensualModel = new SaldoMensual();
     }
 
     /**
@@ -682,6 +684,9 @@ class PagosController {
             redirect('pagos.php');
         }
 
+        $fechaAnterior = $pagoActual['fecha'];
+        $propiedadId = $pagoActual['propiedad_id'];
+
         $nuevasDeudasIds = $_POST['deudas'] ?? [];
         
         // Validar que las nuevas deudas existan y estén pendientes
@@ -721,6 +726,11 @@ class PagosController {
         $actualizado = $this->pagoModel->update($pagoId, $data);
         
         if ($actualizado) {
+            // Actualizar control de caja del mes anterior (por si cambió la fecha)
+            $this->saldoMensualModel->actualizarPorPropiedad($propiedadId, $fechaAnterior);
+            // Actualizar control de caja del mes nuevo
+            $this->saldoMensualModel->actualizarPorPropiedad($propiedadId, $data['fecha']);
+
             flash('success', 'Pago actualizado exitosamente. Total: ' . formatMoney($montoTotal));
             redirect('pagos.php?action=recibo&id=' . $pagoId);
         } else {
@@ -753,6 +763,7 @@ class PagosController {
         }
 
         $propiedadId = $pago['propiedad_id'];
+        $fechaPago = $pago['fecha'];
         $db = getDB();
 
         try {
@@ -776,6 +787,9 @@ class PagosController {
             $stmt->execute([':id' => $id]);
 
             $db->commit();
+
+            // Actualizar control de caja del mes correspondiente
+            $this->saldoMensualModel->actualizarPorPropiedad($propiedadId, $fechaPago);
             
             flash('success', 'Pago eliminado exitosamente. Las deudas asociadas han vuelto a estado Pendiente.');
             
