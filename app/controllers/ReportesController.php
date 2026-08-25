@@ -90,8 +90,8 @@ class ReportesController {
                 LEFT JOIN deudas d ON p.id = d.propiedad_id 
                     AND d.estado = 'Pendiente'
                     AND (
-                        d.anio < :anio_actual 
-                        OR (d.anio = :anio_actual AND d.mes <= :mes_actual)
+                        d.anio < :anio_actual_1
+                        OR (d.anio = :anio_actual_2 AND d.mes <= :mes_actual)
                     )
                 LEFT JOIN comunidades c ON p.comunidad_id = c.id
                 WHERE p.id = :propiedad_id 
@@ -102,7 +102,8 @@ class ReportesController {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':propiedad_id' => $propiedadId,
-            ':anio_actual' => $anioActual,
+            ':anio_actual_1' => $anioActual,
+            ':anio_actual_2' => $anioActual,
             ':mes_actual' => $mesActual
         ]);
         
@@ -283,8 +284,8 @@ class ReportesController {
                 LEFT JOIN deudas d ON p.id = d.propiedad_id 
                     AND d.estado = 'Pendiente'
                     AND (
-                        d.anio < :anio_actual 
-                        OR (d.anio = :anio_actual AND d.mes <= :mes_actual)
+                        d.anio < :anio_actual_1
+                        OR (d.anio = :anio_actual_2 AND d.mes <= :mes_actual)
                     )
                 LEFT JOIN comunidades c ON p.comunidad_id = c.id
                 WHERE p.comunidad_id = :comunidad_id 
@@ -297,7 +298,8 @@ class ReportesController {
         $stmt->execute([
             ':comunidad_id' => $comunidadId,
             ':minimo_meses' => $minimoMeses,
-            ':anio_actual' => $anioActual,
+            ':anio_actual_1' => $anioActual,
+            ':anio_actual_2' => $anioActual,
             ':mes_actual' => $mesActual
         ]);
         
