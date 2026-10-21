@@ -42,13 +42,15 @@ require_once __DIR__ . '/../partials/header.php';
                     <i class="bi bi-image me-2"></i>Boleta/Recibo
                 </h6>
                 
-                <?php if (!empty($pago['imagen_path'])): ?>
-                    <?php 
-                    $extension = pathinfo($pago['imagen_path'], PATHINFO_EXTENSION);
-                    $isPdf = strtolower($extension) === 'pdf';
-                    ?>
-                    
-                    <?php if ($isPdf): ?>
+                <?php 
+                // Mostrar la imagen principal (imagen_path original)
+                $mostrarPrincipal = !empty($pago['imagen_path']);
+                $extensionPrincipal = pathinfo($pago['imagen_path'] ?? '', PATHINFO_EXTENSION);
+                $isPdfPrincipal = strtolower($extensionPrincipal) === 'pdf';
+                ?>
+                
+                <?php if ($mostrarPrincipal): ?>
+                    <?php if ($isPdfPrincipal): ?>
                         <div class="alert alert-info">
                             <i class="bi bi-file-pdf me-2"></i>
                             El documento es un PDF. 
@@ -72,7 +74,49 @@ require_once __DIR__ . '/../partials/header.php';
                             </p>
                         </div>
                     <?php endif; ?>
-                <?php else: ?>
+                <?php endif; ?>
+                
+                <?php // Mostrar imágenes adicionales del nuevo sistema ?>
+                <?php if (!empty($imagenesAdicionales)): ?>
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-2">Imágenes adicionales</h6>
+                        <div class="row g-3">
+                            <?php foreach ($imagenesAdicionales as $img): ?>
+                                <?php $ext = pathinfo($img['ruta_imagen'], PATHINFO_EXTENSION);
+                                    $isPdf = strtolower($ext) === 'pdf'; ?>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <?php if ($isPdf): ?>
+                                        <div class="ratio ratio-16x9">
+                                            <embed src="<?= BASE_URL . $img['ruta_imagen'] ?>" type="application/pdf" class="rounded border">
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="ratio ratio-16x9">
+                                            <a href="<?= BASE_URL . $img['ruta_imagen'] ?>" target="_blank" title="Ver imagen">
+                                                <img src="<?= BASE_URL . $img['ruta_imagen'] ?>" 
+                                                     alt="Boleta/Recibo adicional" 
+                                                     class="img-fluid rounded border shadow-sm"
+                                                     style="object-fit: cover; height: 150px;">
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="d-flex justify-content-center gap-2 mt-1">
+                                        <a href="<?= BASE_URL . $img['ruta_imagen'] ?>" download 
+                                           class="btn btn-sm btn-outline-primary" title="Descargar">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <a href="colaboradores.php?action=eliminarImagen&id=<?= $pago['id'] ?>&imagen_id=<?= $img['id'] ?>" 
+                                           class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                           onclick="return confirm('¿Está seguro de eliminar esta imagen?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (!$mostrarPrincipal && empty($imagenesAdicionales)): ?>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         No hay boleta/recibo adjunto a este pago.

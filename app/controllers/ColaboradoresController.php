@@ -359,18 +359,25 @@ class ColaboradoresController {
         $pagoId = $this->pagoColaboradorModel->create($data);
         
         if ($pagoId) {
-            // Procesar imagen si se subió
-            if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $imagenPath = $this->procesarImagenPago($_FILES['imagen']);
-                if ($imagenPath) {
-                    $this->pagoColaboradorModel->updateImagenPath($pagoId, $imagenPath);
+            // Procesar hasta 4 imágenes individuales subidas
+            $totalImagenes = 0;
+            $imagenFiles = [];
+            for ($i = 1; $i <= 4; $i++) {
+                if (isset($_FILES["imagen_$i"]) && $_FILES["imagen_$i"]["error"] !== UPLOAD_ERR_NO_FILE) {
+                    $imagenFiles[] = $_FILES["imagen_$i"];
                 }
             }
-
-            // Actualizar control de caja del mes correspondiente
+            if (!empty($imagenFiles)) {
+                $resultado = $this->pagoColaboradorModel->subirImagenesIndividuales($pagoId, $imagenFiles);
+                $totalImagenes = $resultado["success"] ?? 0;
+                if (!empty($resultado["errors"])) {
+                    flash("warning", implode(", ", $resultado["errors"]));
+                }
+            }
             $this->actualizarSaldoMensualPorFecha($data['fecha']);
             
-            flash('success', 'Pago registrado exitosamente: ' . formatMoney($data['monto']));
+            flash('success', 'Pago registrado exitosamente: ' . formatMoney($data['monto']) . 
+                ($totalImagenes > 0 ? ' (' . $totalImagenes . ' imágenes cargadas)' : ''));
             redirect('colaboradores.php?action=pagos');
         } else {
             flash('error', 'Error al registrar el pago');
@@ -390,13 +397,32 @@ class ColaboradoresController {
         }
 
         $pago = $this->pagoColaboradorModel->getWithImagen($id);
+        if (!$pago) {
+            flash('error', 'Pago no encontrado');
+            redirect('colaboradores.php?action=pagos');
+        }
         $fechaPago = $pago['fecha'] ?? null;
 
-        // Eliminar imagen física si existe
+        // Eliminar imagen física principal si existe
         $imagenPath = $this->pagoColaboradorModel->getImagenPath($id);
-        if ($imagenPath && file_exists(PUBLIC_PATH . '/' . $imagenPath)) {
-            @unlink(PUBLIC_PATH . '/' . $imagenPath);
+        if ($imagenPath) {
+            $rutaAbs = PUBLIC_PATH . '/' . ltrim($imagenPath, '/');
+            if (file_exists($rutaAbs)) {
+                @unlink($rutaAbs);
+            }
         }
+
+        // Eliminar imágenes adicionales (archivos y registros)
+        $imagenesAdicionales = $this->pagoColaboradorModel->getImagenes($id);
+        foreach ($imagenesAdicionales as $img) {
+            if (!empty($img['ruta_imagen'])) {
+                $rutaAbs = PUBLIC_PATH . '/' . ltrim($img['ruta_imagen'], '/');
+                if (file_exists($rutaAbs)) {
+                    @unlink($rutaAbs);
+                }
+            }
+        }
+        $this->pagoColaboradorModel->eliminarTodasImagenes($id);
 
         $success = $this->pagoColaboradorModel->hardDelete($id);
         
@@ -481,17 +507,33 @@ class ColaboradoresController {
             redirect('colaboradores.php?action=editPago&id=' . $id);
         }
 
-        // Procesar nueva imagen si se subió
-        if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] !== UPLOAD_ERR_NO_FILE) {
-            // Eliminar imagen anterior si existe
-            if (!empty($pago['imagen_path']) && file_exists(PUBLIC_PATH . '/' . $pago['imagen_path'])) {
-                @unlink(PUBLIC_PATH . '/' . $pago['imagen_path']);
+        // Procesar hasta 4 imágenes individuales (reemplazarán las anteriores)
+        $imagenFiles = [];
+        for ($i = 1; $i <= 4; $i++) {
+            if (isset($_FILES["imagen_$i"]) && $_FILES["imagen_$i"]["error"] !== UPLOAD_ERR_NO_FILE) {
+                $imagenFiles[] = $_FILES["imagen_$i"];
             }
-            
-            $imagenPath = $this->procesarImagenPago($_FILES['imagen']);
-            if ($imagenPath) {
-                $data['imagen_path'] = $imagenPath;
+        }
+
+        if (!empty($imagenFiles)) {
+            // Eliminar imágenes anteriores si existen
+            $imagenesAnteriores = $this->pagoColaboradorModel->getImagenes($id);
+            foreach ($imagenesAnteriores as $imgAnterior) {
+                if (!empty($imgAnterior['ruta_imagen'])) {
+                    $rutaAbs = PUBLIC_PATH . '/' . ltrim($imgAnterior['ruta_imagen'], '/');
+                    if (file_exists($rutaAbs)) {
+                        @unlink($rutaAbs);
+                    }
+                }
             }
+            $this->pagoColaboradorModel->eliminarTodasImagenes($id);
+
+            // Subir nuevas imágenes
+            $resultado = $this->pagoColaboradorModel->subirImagenesIndividuales($id, $imagenFiles);
+            if (!empty($resultado['errors'])) {
+                flash('warning', implode(', ', $resultado['errors']));
+            }
+            $totalImagenes = $resultado['success'] ?? 0;
         }
 
         $success = $this->pagoColaboradorModel->update($id, $data);
@@ -778,6 +820,9 @@ class ColaboradoresController {
             redirect('colaboradores.php?action=pagos');
         }
 
+        // Obtener todas las imágenes adicionales (del nuevo sistema)
+        $imagenesAdicionales = $this->pagoColaboradorModel->getImagenes($id);
+        
         $title = 'Boleta/Recibo del Pago #' . $id;
         require_once VIEWS_PATH . '/colaboradores/ver_imagen.php';
     }
@@ -787,17 +832,38 @@ class ColaboradoresController {
      */
     public function eliminarImagen(): void {
         $id = (int) ($_GET['id'] ?? 0);
+        $imagenId = (int) ($_GET['imagen_id'] ?? 0);
         
         if (!$id) {
             flash('error', 'ID de pago no válido');
             redirect('colaboradores.php?action=pagos');
         }
 
+        // Si viene imagen_id, se elimina una imagen específica de la tabla nueva
+        if ($imagenId) {
+            $this->pagoColaboradorModel->eliminarImagen($imagenId);
+            flash('success', 'Imagen eliminada exitosamente');
+            redirect('colaboradores.php?action=verImagen&id=' . $id);
+        }
+
+        // Si no, se elimina la imagen principal (y todas las adicionales)
         $imagenPath = $this->pagoColaboradorModel->getImagenPath($id);
         
         if ($imagenPath && file_exists(PUBLIC_PATH . '/' . $imagenPath)) {
             @unlink(PUBLIC_PATH . '/' . $imagenPath);
         }
+        
+        // Eliminar también las imágenes adicionales
+        $imagenesAdicionales = $this->pagoColaboradorModel->getImagenes($id);
+        foreach ($imagenesAdicionales as $img) {
+            if (!empty($img['ruta_imagen'])) {
+                $rutaAbs = PUBLIC_PATH . '/' . ltrim($img['ruta_imagen'], '/');
+                if (file_exists($rutaAbs)) {
+                    @unlink($rutaAbs);
+                }
+            }
+        }
+        $this->pagoColaboradorModel->eliminarTodasImagenes($id);
         
         $this->pagoColaboradorModel->deleteImagen($id);
         flash('success', 'Imagen eliminada exitosamente');

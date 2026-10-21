@@ -1,0 +1,33 @@
+# Prevenir acceso a archivos .git y .md desde la web
+<FilesMatch "^\.git">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.md$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Prevenir listing de directorios
+Options -Indexes
+
+# Seguridad adicional - ocultar versión de PHP
+# php_value expose_php off
+
+# Bloquear acceso directo a archivos PHP en ciertas carpetas si es necesario
+# <FilesMatch "\.php$">
+#     Order Allow,Deny
+#     Deny from env=BAD_REFERER
+# </FilesMatch>
+
+RewriteEngine On
+
+# Redirigir HTTP a HTTPS si está configurado
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Reglas de reescritura para pretty URLs (si aplica)
+# RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteRule ^(.*)$ index.php [QSA,L]

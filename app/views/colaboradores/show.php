@@ -160,7 +160,7 @@ require_once __DIR__ . '/../partials/header.php';
                                     <td><?= formatDate($pago['fecha']) ?></td>
                                     <td><?= e($pago['detalle']) ?></td>
                                     <td class="text-center">
-                                        <?php if (!empty($pago['imagen_path'])): ?>
+                                        <?php if (!empty($pago['imagen_path']) || !empty($pago['total_imagenes'])): ?>
                                             <a href="colaboradores.php?action=verImagen&id=<?= $pago['id'] ?>" 
                                                class="badge bg-success text-decoration-none" title="Ver boleta">
                                                 <i class="bi bi-paperclip"></i> Ver
@@ -174,7 +174,7 @@ require_once __DIR__ . '/../partials/header.php';
                                     <td class="text-end fw-bold"><?= formatMoney((float)$pago['monto']) ?></td>
                                     <td><?= e($pago['pagado_por_nombre']) ?></td>
                                     <td class="text-center">
-                                        <?php if (!empty($pago['imagen_path'])): ?>
+                                        <?php if (!empty($pago['imagen_path']) || !empty($pago['total_imagenes'])): ?>
                                             <a href="colaboradores.php?action=verImagen&id=<?= $pago['id'] ?>" 
                                                class="btn btn-sm btn-outline-primary me-1" title="Ver Boleta">
                                                 <i class="bi bi-image"></i>

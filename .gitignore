@@ -1,0 +1,20 @@
+# Imágenes de boletas/recibos de pagos (generadas en runtime)
+/public/assets/images/pagos_colaboradores/
+
+# Estadísticas generadas por la aplicación
+/stats/
+
+# Fuentes generadas por dompdf
+/vendor/dompdf/dompdf/lib/fonts/*.afm.json
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp

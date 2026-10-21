@@ -6,7 +6,6 @@
 $title = 'Editar Pago #' . $pago['id'];
 require_once __DIR__ . '/../partials/header.php';
 ?>
-
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4><?= $title ?></h4>
     <a href="colaboradores.php?action=pagos" class="btn btn-outline-secondary">
@@ -20,7 +19,7 @@ require_once __DIR__ . '/../partials/header.php';
             <form action="colaboradores.php?action=updatePago" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
                 <input type="hidden" name="id" value="<?= $pago['id'] ?>">
-
+            
                 <div class="mb-4">
                     <label class="form-label">Colaborador <span class="text-danger">*</span></label>
                     <select name="colaborador_id" class="form-select form-select-lg" required>
@@ -48,8 +47,8 @@ require_once __DIR__ . '/../partials/header.php';
                             <input type="number" name="monto" class="form-control" required 
                                    min="1" step="0.01"
                                    value="<?= $pago['monto'] ?>">
+                            <div class="form-text">Ingrese el monto sin puntos ni comas</div>
                         </div>
-                        <div class="form-text">Ingrese el monto sin puntos ni comas</div>
                     </div>
                     <div class="col-md-6 mb-4">
                         <label class="form-label">Fecha <span class="text-danger">*</span></label>
@@ -62,6 +61,30 @@ require_once __DIR__ . '/../partials/header.php';
                     <label class="form-label">
                         <i class="bi bi-image me-2"></i>Boleta/Recibo del Pago
                     </label>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_1" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_2" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_3" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_4" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                    </div>
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Formatos permitidos: JPEG, PNG, GIF o PDF (Máx. 5MB cada una. Se admiten hasta 4 imágenes.)
+                    </div>
                     <?php if (!empty($pago['imagen_path'])): ?>
                         <div class="alert alert-info mb-3">
                             <i class="bi bi-paperclip me-2"></i>
@@ -71,15 +94,6 @@ require_once __DIR__ . '/../partials/header.php';
                             </a>
                         </div>
                     <?php endif; ?>
-                    <input type="file" name="imagen" class="form-control" 
-                           accept="image/jpeg,image/png,image/gif,application/pdf">
-                    <div class="form-text">
-                        <i class="bi bi-info-circle me-1"></i>
-                        <?php if (!empty($pago['imagen_path'])): ?>
-                            Si selecciona un nuevo archivo, reemplazará la imagen actual. 
-                        <?php endif; ?>
-                        Formatos permitidos: JPEG, PNG, GIF o PDF (Máx. 5MB)
-                    </div>
                 </div>
 
                 <div class="d-flex justify-content-between mt-4">

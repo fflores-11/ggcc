@@ -69,11 +69,29 @@ require_once __DIR__ . '/../partials/header.php';
                     <label class="form-label">
                         <i class="bi bi-image me-2"></i>Boleta/Recibo del Pago
                     </label>
-                    <input type="file" name="imagen" class="form-control" 
-                           accept="image/jpeg,image/png,image/gif,application/pdf">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_1" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_2" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_3" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <input type="file" name="imagen_4" class="form-control" 
+                                   accept="image/jpeg,image/png,image/gif,application/pdf">
+                        </div>
+                    </div>
                     <div class="form-text">
                         <i class="bi bi-info-circle me-1"></i>
-                        Adjunte una imagen o PDF de la boleta/recibo (JPEG, PNG, GIF o PDF - Máx. 5MB)
+                        Adjunte hasta 4 imágenes o PDFs de la boleta/recibo (JPEG, PNG, GIF o PDF - Máx. 5MB cada una)
                     </div>
                 </div>
 

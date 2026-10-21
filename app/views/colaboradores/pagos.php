@@ -59,7 +59,7 @@ $perPage = $perPage ?? 20;
                             </td>
                             <td><?= e($pago['detalle']) ?></td>
                             <td class="text-center">
-                                <?php if (!empty($pago['imagen_path'])): ?>
+                                <?php if (!empty($pago['imagen_path']) || !empty($pago['total_imagenes'])): ?>
                                     <span class="badge bg-success" title="Boleta adjunta">
                                         <i class="bi bi-paperclip"></i> Sí
                                     </span>
@@ -84,7 +84,7 @@ $perPage = $perPage ?? 20;
                                        target="_blank">
                                         <i class="bi bi-file-earmark-pdf"></i>
                                     </a>
-                                    <?php if (!empty($pago['imagen_path'])): ?>
+                                    <?php if (!empty($pago['imagen_path']) || !empty($pago['total_imagenes'])): ?>
                                         <a href="colaboradores.php?action=verImagen&id=<?= $pago['id'] ?>" 
                                            class="btn btn-outline-info" title="Ver Boleta/Recibo">
                                             <i class="bi bi-image"></i>
